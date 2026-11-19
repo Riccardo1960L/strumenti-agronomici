@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strumenti agronomici — radiazione solare e serre</title>
+<style>
+  :root{
+    --bg:#0d0f10; --panel:#15181a; --border:#2a2f33; --text:#d7dbde;
+    --dim:#8a9198; --accent:#4fd67a; --accent2:#5aa9e6; --warn:#e6b45a;
+    --mono:'SF Mono','Menlo','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); margin:0; padding:24px; line-height:1.6;}
+  .wrap{max-width:900px; margin:0 auto;}
+  h1{font-size:1.4em; color:var(--accent); margin:0 0 6px 0;}
+  h2{font-size:1em; color:var(--accent2); border-bottom:1px solid var(--border); padding-bottom:6px; margin:28px 0 14px 0;}
+  h3{font-size:1.05em; color:var(--accent); margin:0 0 6px 0;}
+  .sub{color:var(--dim); font-size:0.88em; margin-bottom:18px;}
+  p{margin:0 0 10px 0; font-size:0.9em;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:16px;}
+  .card dl{margin:10px 0 14px 0; font-size:0.82em;}
+  .card dt{color:var(--accent2); margin-top:8px;}
+  .card dd{margin:2px 0 0 0; color:var(--text);}
+  .card dd.lim{color:var(--dim);}
+  .btn{display:inline-block; padding:8px 14px; border:1px solid var(--accent); border-radius:5px; color:var(--accent); background:#1c2b22; text-decoration:none; font-size:0.9em;}
+  .btn:hover{background:#24382c;}
+  .note{border-left:3px solid var(--warn); padding:6px 12px; color:var(--dim); font-size:0.85em; margin:14px 0;}
+  ul{margin:0 0 10px 0; padding-left:20px; font-size:0.88em;}
+  li{margin-bottom:4px;}
+  a{color:var(--accent2);}
+  footer{color:var(--dim); font-size:0.75em; text-align:center; margin-top:30px; line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🌱 Strumenti agronomici</h1>
+  <div class="sub">Radiazione solare, fotosintesi e serre — calcolatori che girano nel browser</div>
+
+  <p>Piccoli strumenti nati da script Python per l'analisi agronomica, riscritti come pagine web autonome: si aprono nel browser, senza installare nulla e senza registrazione. I dati che servono (posizione, meteo) vengono richiesti a servizi pubblici al momento del calcolo; nessun dato viene salvato da questo sito.</p>
+
+  <div class="note">Sono strumenti sperimentali. Usano modelli semplificati e parametri indicativi: servono a confrontare scenari e a farsi un'idea degli ordini di grandezza, non a prendere decisioni professionali al posto di un tecnico.</div>
+
+  <h2>Gli strumenti</h2>
+
+  <div class="card">
+    <h3>☀ ric-sole — radiazione solare e accrescimento</h3>
+    <p>Per un luogo, una data e un'ora calcola la posizione del sole, la radiazione disponibile e una stima dell'accrescimento orario di circa 37 essenze (orticole, frutticole, cerealicole, forestali).</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Altezza e azimut del sole, irradianza, illuminamento, energia (J/m² e kWh/m²), PAR, efficienza fotosintetica, biomassa per m² e per pianta. In modo facoltativo confronta il cielo sereno con la nuvolosità reale.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Posizione solare con l'algoritmo NOAA; radiazione a cielo sereno dalla sola geometria solare; accrescimento come efficienza d'uso della luce (LUE) × energia. La nuvolosità arriva da Open-Meteo.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Il cielo sereno è un modello molto semplice (nessuna atmosfera dettagliata); l'irradianza è considerata costante per un'ora; LUE e superfici fogliari sono valori indicativi per essenza. Il fuso orario si imposta a mano (per l'Italia: +2 in estate, +1 in inverno).</dd>
+    </dl>
+    <a class="btn" href="ric-sole.html">Apri ric-sole →</a>
+  </div>
+
+  <div class="card">
+    <h3>🕸 ric-sun — parametri solari e reti ombreggianti</h3>
+    <p>La stessa fisica di ric-sole in forma di rapporto di testo, con in più il modulo per le reti ombreggianti.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Parametri solari, PAR e accrescimento; con la rete attiva anche angolo di incidenza sul piano della rete, radiazione sul piano inclinato, ombreggiamento effettivo e radiazione, energia e PAR sotto rete.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Piano inclinato con modello isotropico (diffusa stimata al 12%, albedo 0,20); ombreggiamento che cresce con l'angolo di incidenza, secondo una relazione di tipo Beer-Lambert; quota di luce diffusa dalla rete regolabile.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Modello semplificato e senza dati meteo reali: i valori sotto rete sono stime a cielo sereno. Il fuso orario si imposta a mano.</dd>
+    </dl>
+    <a class="btn" href="ric-sun.html">Apri ric-sun →</a>
+  </div>
+
+  <div class="card">
+    <h3>🏡 ric-serra-materiali — confronto materiali di copertura</h3>
+    <p>Confronta quattro coperture per serra: vetro martellato, Vedril (PMMA), policarbonato alveolare e polietilene 4 stagioni.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>In estate la luce che arriva alle piante (DLI, in mol/m²/giorno) e la sua efficienza rispetto all'esterno. In inverno il bilancio termico giornaliero (guadagno solare meno dispersione) e un giudizio Basso / Medio / Alto sul riscaldamento integrativo necessario.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Geometria della falda (inclinazione e orientamento) con trasmittanza che dipende dall'angolo d'incidenza; cielo sereno semplificato (massa d'aria di Kasten-Young e radiazione diretta di Meinel); dispersione con il coefficiente U di ciascun materiale; temperatura esterna oraria modificabile a mano.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Adatto al confronto relativo tra materiali, non a misure assolute: non considera nuvolosità, ombre, ventilazione, condensa o invecchiamento reale. Le proprietà dei materiali sono valori tipici.</dd>
+    </dl>
+    <a class="btn" href="ric-serra-materiali.html">Apri ric-serra-materiali →</a>
+  </div>
+
+  <h2>In preparazione</h2>
+  <ul>
+    <li>Irrigazione e fabbisogno idrico delle colture</li>
+    <li>Maturazione della vite e indici bioclimatici</li>
+    <li>Database delle piante</li>
+  </ul>
+
+  <h2>Dati e crediti</h2>
+  <ul>
+    <li>Dati meteo: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a>, licenza CC BY 4.0.</li>
+    <li>Ricerca dei luoghi: Nominatim, © contributori di <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.</li>
+    <li>Posizione solare: algoritmo NOAA Solar Position.</li>
+  </ul>
+
+  <h2>Segnalazioni</h2>
+  <p>Hai trovato un errore o hai un suggerimento? Scrivilo nelle <a href="https://github.com/Riccardo1960L/strumenti-agronomici/issues" target="_blank" rel="noopener">segnalazioni del progetto su GitHub</a>.</p>
+
+  <footer>Strumenti agronomici — versione di novembre 2026</footer>
+</div>
+</body>
+</html>

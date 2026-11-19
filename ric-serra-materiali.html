@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-serra-materiali — Confronto materiali di copertura serra</title>
+<style>
+  :root{
+    --bg:#0d0f10; --panel:#15181a; --border:#2a2f33; --text:#d7dbde;
+    --dim:#8a9198; --accent:#4fd67a; --accent2:#5aa9e6; --warn:#e6b45a; --red:#e46b5b;
+    --mono:'SF Mono','Menlo','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); margin:0; padding:24px; line-height:1.5;}
+  .wrap{max-width:980px; margin:0 auto;}
+  h1{font-size:1.3em; color:var(--accent); margin:0 0 4px 0;}
+  .sub{color:var(--dim); font-size:0.85em; margin-bottom:20px;}
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:16px;}
+  label{display:block; font-size:0.8em; color:var(--dim); margin-bottom:4px;}
+  input, select, button{font-family:var(--mono); background:#0a0c0d; color:var(--text); border:1px solid var(--border); border-radius:5px; padding:8px 10px; font-size:0.9em;}
+  input:focus, select:focus{outline:1px solid var(--accent2);}
+  .row{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px;}
+  .row > div{flex:1; min-width:160px;}
+  button{cursor:pointer; background:#1c2b22; border:1px solid var(--accent); color:var(--accent); transition:background .15s;}
+  button:hover{background:#24382c;}
+  #geoResults{margin-top:8px; font-size:0.82em;}
+  .geo-item{padding:6px 8px; border:1px solid var(--border); border-radius:5px; margin-bottom:4px; cursor:pointer; color:var(--dim);}
+  .geo-item:hover{border-color:var(--accent2); color:var(--text);}
+  .status{font-size:0.8em; color:var(--dim); margin-top:6px; min-height:1.2em;}
+  .status.err{color:var(--red);} .status.ok{color:var(--accent);}
+  h2{font-size:1em; color:var(--accent2); border-bottom:1px solid var(--border); padding-bottom:6px; margin:0 0 12px 0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-bottom:12px;}
+  .metric{background:#0a0c0d; border:1px solid var(--border); border-radius:6px; padding:10px 12px;}
+  .metric .label{color:var(--dim); font-size:0.75em; text-transform:uppercase; letter-spacing:0.03em;}
+  .metric .value{font-size:1.1em; color:var(--text); margin-top:2px;}
+  .metric .value.accent{color:var(--accent);} .metric .value.accent2{color:var(--accent2);}
+  table{width:100%; border-collapse:collapse; font-size:0.85em; margin-top:8px;}
+  th,td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--border);}
+  th{color:var(--dim); font-weight:normal; font-size:0.8em;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .hint{color:var(--dim); font-size:0.78em; margin-top:4px;}
+  .hidden{display:none;}
+  .tempgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(58px,1fr)); gap:6px; margin-top:6px;}
+  .tempgrid div{text-align:center;}
+  .tempgrid label{font-size:0.68em; margin-bottom:2px;}
+  .tempgrid input{width:100%; padding:5px 4px; text-align:center;}
+  .badge{padding:2px 8px; border-radius:10px; font-size:0.85em;}
+  .badge.basso{background:#173322; color:var(--accent);}
+  .badge.medio{background:#3a2f10; color:var(--warn);}
+  .badge.alto{background:#3a1414; color:var(--red);}
+  footer{color:var(--dim); font-size:0.75em; text-align:center; margin-top:24px;}
+  a{color:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏡 ric-serra-materiali</h1>
+  <div class="sub">Confronto materiali di copertura serra — trasmittanza PAR/DLI (estate) e bilancio termico (inverno)</div>
+
+  <div class="panel">
+    <h2>Località e geometria del tetto della serra</h2>
+    <div class="row">
+      <div style="flex:2;">
+        <label>Cerca luogo (città, indirizzo, nome...)</label>
+        <input type="text" id="geoQuery" placeholder="es. Lavagna, Italia" value="Lavagna, Italia">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="geoSearchBtn">Cerca</button>
+      </div>
+    </div>
+    <div id="geoResults"></div>
+    <div class="row">
+      <div>
+        <label>Latitudine</label>
+        <input type="number" id="lat" step="0.0001" value="44.27">
+      </div>
+      <div>
+        <label>Longitudine</label>
+        <input type="number" id="lon" step="0.0001" value="9.40">
+      </div>
+      <div>
+        <label>Fuso orario (offset UTC, ore)</label>
+        <input type="number" id="tzOffset" step="0.5" value="2">
+      </div>
+      <div>
+        <label>Inclinazione falda (°)</label>
+        <input type="number" id="tilt" step="1" value="25">
+      </div>
+      <div>
+        <label>Orientamento falda (° da Nord, 180=Sud)</label>
+        <input type="number" id="surfaceAz" step="1" value="180">
+      </div>
+    </div>
+    <div class="hint" id="geoLabel">📍 Lavagna (lat=44.27, lon=9.40) — impostazione predefinita</div>
+    <div class="hint">Modello cielo sereno semplificato (Kasten-Young + Meinel), non il modello Ineichen di pvlib: adatto al confronto relativo tra materiali, non a misure assolute.</div>
+  </div>
+
+  <div class="panel">
+    <h2>☀ Confronto estivo — trasmittanza PAR e DLI</h2>
+    <div class="row">
+      <div>
+        <label>Data (giorno estivo)</label>
+        <input type="date" id="dataEstate" value="2026-07-15">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="calcEstateBtn">Calcola DLI estivo</button>
+      </div>
+    </div>
+    <div class="status" id="statusEstate"></div>
+
+    <div class="grid hidden" id="estateMetrics">
+      <div class="metric"><div class="label">DLI esterno a cielo libero</div><div class="value accent" id="outDliEsterno">—</div></div>
+    </div>
+
+    <table class="hidden" id="tabellaEstate">
+      <thead>
+        <tr>
+          <th>Materiale copertura</th>
+          <th class="num">Trasmittanza PAR rif. (%)</th>
+          <th class="num">Quota luce diffusa (%)</th>
+          <th class="num">DLI interno (mol/m²/g)</th>
+          <th class="num">Efficienza luce vs esterno (%)</th>
+        </tr>
+      </thead>
+      <tbody id="bodyEstate"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>❄ Bilancio termico invernale</h2>
+    <div class="row">
+      <div>
+        <label>Data (giorno invernale)</label>
+        <input type="date" id="dataInverno" value="2026-02-15">
+      </div>
+      <div>
+        <label>Temperatura target interna serra (°C)</label>
+        <input type="number" id="tTarget" step="0.5" value="15">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="calcInvernoBtn">Calcola bilancio termico</button>
+      </div>
+    </div>
+    <label style="margin-top:8px;">Profilo orario temperatura esterna (°C, 00:00 → 23:00, modificabile)</label>
+    <div class="tempgrid" id="tempGrid"></div>
+    <div class="status" id="statusInverno"></div>
+
+    <div class="grid hidden" id="invernoMetrics">
+      <div class="metric"><div class="label">T. interna target</div><div class="value" id="outTTarget">—</div></div>
+      <div class="metric"><div class="label">T. esterna media giornata</div><div class="value" id="outTMedia">—</div></div>
+    </div>
+
+    <table class="hidden" id="tabellaInverno">
+      <thead>
+        <tr>
+          <th>Materiale copertura</th>
+          <th class="num">Coeff. U (W/m²K)</th>
+          <th class="num">Guadagno solare (kWh/m²/g)</th>
+          <th class="num">Perdita termica (kWh/m²/g)</th>
+          <th class="num">Bilancio netto (kWh/m²/g)</th>
+          <th>Fabbisogno riscaldamento integrativo</th>
+        </tr>
+      </thead>
+      <tbody id="bodyInverno"></tbody>
+    </table>
+  </div>
+
+  <footer>Calcolo posizione solare: algoritmo NOAA Solar Position. Cielo sereno: massa d'aria Kasten-Young + DNI Meinel (approssimazione). Geocoding: <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> &mdash; &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributori di OpenStreetMap</a>.<br>Strumento sperimentale: le stime usano modelli semplificati e parametri indicativi; non sostituiscono la valutazione di un tecnico.<br><a href="index.html">&larr; Tutti gli strumenti</a></footer>
+</div>
+
+<script>
+// ==============================================================================
+// 1. MATERIALI — proprietà ottiche (confronto estivo PAR/DLI)
+// ==============================================================================
+const MATERIALI_PAR = {
+  'Vetro Martellato':        { tau_par: 0.89, diffuse_fraction: 0.45, degradation_factor: 1.00 },
+  'Vedril (PMMA)':            { tau_par: 0.92, diffuse_fraction: 0.12, degradation_factor: 0.98 },
+  'Policarbonato Alveolare':  { tau_par: 0.79, diffuse_fraction: 0.60, degradation_factor: 0.93 },
+  'Polietilene 4 Stagioni':   { tau_par: 0.86, diffuse_fraction: 0.55, degradation_factor: 0.88 }
+};
+
+// ==============================================================================
+// 2. MATERIALI — proprietà termiche (bilancio invernale)
+// ==============================================================================
+const MATERIALI_TERMICI = {
+  'Vetro Martellato (4mm)':            { tau_solare: 0.85, U_value: 5.7, IR_emissivity: 0.94 },
+  'Vedril / PMMA (4mm)':                { tau_solare: 0.90, U_value: 5.3, IR_emissivity: 0.92 },
+  'Policarbonato Alveolare (10mm)':     { tau_solare: 0.75, U_value: 3.0, IR_emissivity: 0.95 },
+  'Polietilene 4 Stagioni IR (200µm)':  { tau_solare: 0.82, U_value: 6.0, IR_emissivity: 0.85 }
+};
+
+const TEMP_ESTERNE_DEFAULT = [4,3,3,3,3,4,4,5,7,9,11,11,10,9,8,6,5,5,4,4,4,4,4,4];
+
+// ==============================================================================
+// Posizione solare (algoritmo NOAA) — stessa logica di ric-sole.html
+// ==============================================================================
+function toJulianDay(date) { return (date.getTime() / 86400000) + 2440587.5; }
+
+function solarPosition(dateUTC, lat, lon) {
+  const jd = toJulianDay(dateUTC);
+  const jc = (jd - 2451545.0) / 36525.0;
+
+  const geomMeanLongSun = (280.46646 + jc * (36000.76983 + jc * 0.0003032)) % 360;
+  const geomMeanAnomSun = 357.52911 + jc * (35999.05029 - 0.0001537 * jc);
+  const eccentEarthOrbit = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc);
+
+  const gmasRad = geomMeanAnomSun * Math.PI / 180;
+  const sunEqCtr = Math.sin(gmasRad) * (1.914602 - jc * (0.004817 + 0.000014 * jc))
+                 + Math.sin(2 * gmasRad) * (0.019993 - 0.000101 * jc)
+                 + Math.sin(3 * gmasRad) * 0.000289;
+
+  const sunTrueLong = geomMeanLongSun + sunEqCtr;
+  const sunAppLong = sunTrueLong - 0.00569 - 0.00478 * Math.sin((125.04 - 1934.136 * jc) * Math.PI / 180);
+
+  const meanObliqEcliptic = 23 + (26 + ((21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813)))) / 60) / 60;
+  const obliqCorr = meanObliqEcliptic + 0.00256 * Math.cos((125.04 - 1934.136 * jc) * Math.PI / 180);
+
+  const sunDeclin = Math.asin(Math.sin(obliqCorr * Math.PI / 180) * Math.sin(sunAppLong * Math.PI / 180)) * 180 / Math.PI;
+
+  const varY = Math.tan((obliqCorr / 2) * Math.PI / 180) * Math.tan((obliqCorr / 2) * Math.PI / 180);
+  const eccentRad = eccentEarthOrbit;
+  const eqOfTime = 4 * (180 / Math.PI) * (
+      varY * Math.sin(2 * geomMeanLongSun * Math.PI / 180)
+      - 2 * eccentRad * Math.sin(gmasRad)
+      + 4 * eccentRad * varY * Math.sin(gmasRad) * Math.cos(2 * geomMeanLongSun * Math.PI / 180)
+      - 0.5 * varY * varY * Math.sin(4 * geomMeanLongSun * Math.PI / 180)
+      - 1.25 * eccentRad * eccentRad * Math.sin(2 * gmasRad)
+  );
+
+  const utcMinutes = dateUTC.getUTCHours() * 60 + dateUTC.getUTCMinutes() + dateUTC.getUTCSeconds() / 60;
+  let trueSolarTime = (utcMinutes + eqOfTime + 4 * lon) % 1440;
+  if (trueSolarTime < 0) trueSolarTime += 1440;
+
+  let hourAngle = trueSolarTime / 4 - 180;
+  if (hourAngle < -180) hourAngle += 360;
+
+  const latRad = lat * Math.PI / 180;
+  const declRad = sunDeclin * Math.PI / 180;
+  const haRad = hourAngle * Math.PI / 180;
+
+  const zenithRad = Math.acos(
+    Math.sin(latRad) * Math.sin(declRad) + Math.cos(latRad) * Math.cos(declRad) * Math.cos(haRad)
+  );
+  const elevation = 90 - (zenithRad * 180 / Math.PI);
+
+  let azDenom = (Math.cos(latRad) * Math.sin(zenithRad));
+  let azRad;
+  if (Math.abs(azDenom) > 0.0001) {
+    let cosAz = (Math.sin(latRad) * Math.cos(zenithRad) - Math.sin(declRad)) / azDenom;
+    cosAz = Math.max(-1, Math.min(1, cosAz));
+    azRad = Math.acos(cosAz);
+  } else { azRad = 0; }
+  let azimuth;
+  if (hourAngle > 0) { azimuth = (azRad * 180 / Math.PI + 180) % 360; }
+  else { azimuth = (540 - azRad * 180 / Math.PI) % 360; }
+
+  return { altitude: elevation, azimuth: azimuth };
+}
+
+// ==============================================================================
+// Cielo sereno semplificato: massa d'aria (Kasten-Young) + DNI (Meinel) + DHI
+// ==============================================================================
+function airMass(zenithDeg) {
+  if (zenithDeg >= 90) return null;
+  const zRad = zenithDeg * Math.PI / 180;
+  return 1 / (Math.cos(zRad) + 0.50572 * Math.pow(96.07995 - zenithDeg, -1.6364));
+}
+
+function cieloSereno(altitudeDeg, zenithDeg) {
+  if (altitudeDeg <= 0) return { dni: 0, dhi: 0, ghi: 0 };
+  const am = airMass(zenithDeg);
+  const dni = 1353 * Math.pow(0.7, Math.pow(am, 0.678)); // Meinel & Meinel, approssimazione
+  const dhi = 0.10 * dni;                                  // frazione diffusa tipica cielo sereno
+  const ghi = dni * Math.sin(altitudeDeg * Math.PI / 180) + dhi;
+  return { dni, dhi, ghi };
+}
+
+// Irradianza sul piano inclinato (modello isotropico, come get_total_irradiance di pvlib)
+function poaGlobal(altitudeDeg, azimuthSunDeg, tiltDeg, surfaceAzDeg, dni, dhi, ghi, albedo) {
+  const zenithRad = (90 - altitudeDeg) * Math.PI / 180;
+  const tiltRad = tiltDeg * Math.PI / 180;
+  const azDiffRad = (azimuthSunDeg - surfaceAzDeg) * Math.PI / 180;
+
+  const cosAoi = Math.cos(zenithRad) * Math.cos(tiltRad)
+               + Math.sin(zenithRad) * Math.sin(tiltRad) * Math.cos(azDiffRad);
+  const aoiRad = Math.acos(Math.max(-1, Math.min(1, cosAoi)));
+
+  const poaDirect = dni * Math.max(0, cosAoi);
+  const poaDiffuseSky = dhi * (1 + Math.cos(tiltRad)) / 2;
+  const poaGround = ghi * albedo * (1 - Math.cos(tiltRad)) / 2;
+
+  return { poa: poaDirect + poaDiffuseSky + poaGround, aoiDeg: aoiRad * 180 / Math.PI };
+}
+
+// ==============================================================================
+// UI — geocoding (identico a ric-sole.html)
+// ==============================================================================
+document.getElementById('geoSearchBtn').addEventListener('click', geocodeSearch);
+document.getElementById('geoQuery').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); geocodeSearch(); }
+});
+
+async function geocodeSearch() {
+  const q = document.getElementById('geoQuery').value.trim();
+  const resultsDiv = document.getElementById('geoResults');
+  if (!q) return;
+  resultsDiv.innerHTML = '<div class="hint">Ricerca in corso…</div>';
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
+    const resp = await fetch(url, { headers: { 'Accept-Language': 'it' } });
+    if (!resp.ok) throw new Error('Errore rete');
+    const data = await resp.json();
+    if (!data.length) { resultsDiv.innerHTML = '<div class="hint">Nessun risultato trovato.</div>'; return; }
+    resultsDiv.innerHTML = '';
+    data.forEach(place => {
+      const div = document.createElement('div');
+      div.className = 'geo-item';
+      div.textContent = `📍 ${place.display_name} (${parseFloat(place.lat).toFixed(4)}, ${parseFloat(place.lon).toFixed(4)})`;
+      div.addEventListener('click', () => {
+        document.getElementById('lat').value = parseFloat(place.lat).toFixed(4);
+        document.getElementById('lon').value = parseFloat(place.lon).toFixed(4);
+        document.getElementById('geoLabel').textContent = `📍 ${place.display_name} (lat=${parseFloat(place.lat).toFixed(4)}, lon=${parseFloat(place.lon).toFixed(4)})`;
+        resultsDiv.innerHTML = '';
+        const stima = Math.round(parseFloat(place.lon) / 15);
+        document.getElementById('tzOffset').value = stima;
+      });
+      resultsDiv.appendChild(div);
+    });
+  } catch (err) {
+    resultsDiv.innerHTML = `<div class="hint">Errore durante la ricerca: ${err.message}</div>`;
+  }
+}
+
+// ==============================================================================
+// Griglia temperature orarie invernali (editabile)
+// ==============================================================================
+const tempGridDiv = document.getElementById('tempGrid');
+TEMP_ESTERNE_DEFAULT.forEach((t, h) => {
+  const cell = document.createElement('div');
+  cell.innerHTML = `<label>${String(h).padStart(2,'0')}:00</label>
+    <input type="number" step="0.5" value="${t}" data-hour="${h}" class="tempInput">`;
+  tempGridDiv.appendChild(cell);
+});
+
+// ==============================================================================
+// 3. Calcolo estivo — DLI e trasmittanza PAR
+// ==============================================================================
+document.getElementById('calcEstateBtn').addEventListener('click', calcolaEstate);
+
+function calcolaEstate() {
+  const statusEl = document.getElementById('statusEstate');
+  statusEl.className = 'status'; statusEl.textContent = 'Calcolo in corso…';
+
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+  const tilt = parseFloat(document.getElementById('tilt').value);
+  const surfaceAz = parseFloat(document.getElementById('surfaceAz').value);
+  const dataStr = document.getElementById('dataEstate').value;
+  const albedo = 0.2;
+
+  if (isNaN(lat) || isNaN(lon) || !dataStr) {
+    statusEl.className = 'status err'; statusEl.textContent = 'Controlla località e data.'; return;
+  }
+
+  const [anno, mese, giorno] = dataStr.split('-').map(Number);
+  const intervalMin = 10;
+  const dliMateriali = {}; Object.keys(MATERIALI_PAR).forEach(m => dliMateriali[m] = 0);
+  let dliEsterno = 0;
+
+  for (let minuti = 5*60; minuti <= 21*60; minuti += intervalMin) {
+    const hh = Math.floor(minuti/60), mm = minuti % 60;
+    const dateUTC = new Date(Date.UTC(anno, mese-1, giorno, hh, mm) - tzOffset*3600*1000);
+    const { altitude, azimuth } = solarPosition(dateUTC, lat, lon);
+    const zenith = 90 - altitude;
+    if (altitude <= 0 || zenith >= 88) continue;
+
+    const { dni, dhi, ghi } = cieloSereno(altitude, zenith);
+    const { poa, aoiDeg } = poaGlobal(altitude, azimuth, tilt, surfaceAz, dni, dhi, ghi, albedo);
+    if (poa <= 0) continue;
+
+    const parEst = poa * 0.45 * 4.6; // umol/m2/s incidente sul piano esterno
+    dliEsterno += (parEst * intervalMin * 60) / 1_000_000;
+
+    const aoiRad = Math.min(aoiDeg, 80) * Math.PI / 180;
+    for (const nomeMat in MATERIALI_PAR) {
+      const prop = MATERIALI_PAR[nomeMat];
+      const tauAngolare = prop.tau_par * Math.pow(Math.cos(aoiRad), 0.15);
+      const tauEffettivo = tauAngolare * prop.degradation_factor;
+      const parInt = parEst * tauEffettivo;
+      dliMateriali[nomeMat] += (parInt * intervalMin * 60) / 1_000_000;
+    }
+  }
+
+  document.getElementById('outDliEsterno').textContent = `${dliEsterno.toFixed(2)} mol/m²/g`;
+  document.getElementById('estateMetrics').classList.remove('hidden');
+
+  const tbody = document.getElementById('bodyEstate');
+  tbody.innerHTML = '';
+  for (const nomeMat in MATERIALI_PAR) {
+    const prop = MATERIALI_PAR[nomeMat];
+    const dli = dliMateriali[nomeMat];
+    const efficienza = dliEsterno > 0 ? (dli / dliEsterno * 100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${nomeMat}</td>
+      <td class="num">${(prop.tau_par*100).toFixed(0)}%</td>
+      <td class="num">${(prop.diffuse_fraction*100).toFixed(0)}%</td>
+      <td class="num">${dli.toFixed(2)}</td>
+      <td class="num">${efficienza.toFixed(1)}%</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('tabellaEstate').classList.remove('hidden');
+
+  statusEl.className = 'status ok'; statusEl.textContent = 'Calcolo completato.';
+}
+
+// ==============================================================================
+// 4. Calcolo invernale — bilancio termico
+// ==============================================================================
+document.getElementById('calcInvernoBtn').addEventListener('click', calcolaInverno);
+
+function calcolaInverno() {
+  const statusEl = document.getElementById('statusInverno');
+  statusEl.className = 'status'; statusEl.textContent = 'Calcolo in corso…';
+
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+  const dataStr = document.getElementById('dataInverno').value;
+  const tTarget = parseFloat(document.getElementById('tTarget').value);
+
+  if (isNaN(lat) || isNaN(lon) || !dataStr || isNaN(tTarget)) {
+    statusEl.className = 'status err'; statusEl.textContent = 'Controlla località, data e temperatura target.'; return;
+  }
+
+  const tempEsterne = Array.from(document.querySelectorAll('.tempInput')).map(i => parseFloat(i.value));
+  const [anno, mese, giorno] = dataStr.split('-').map(Number);
+
+  const risultati = {};
+  Object.keys(MATERIALI_TERMICI).forEach(m => risultati[m] = { solare: 0, dispersione: 0 });
+
+  for (let h = 0; h < 24; h++) {
+    const tEst = tempEsterne[h];
+    const dateUTC = new Date(Date.UTC(anno, mese-1, giorno, h, 0) - tzOffset*3600*1000);
+    const { altitude } = solarPosition(dateUTC, lat, lon);
+    const zenith = 90 - altitude;
+    const { ghi } = (altitude > 0 && zenith < 85) ? cieloSereno(altitude, zenith) : { ghi: 0 };
+
+    for (const nomeMat in MATERIALI_TERMICI) {
+      const prop = MATERIALI_TERMICI[nomeMat];
+      const qSolare = ghi > 0 ? ghi * prop.tau_solare : 0;
+      const deltaT = tTarget - tEst;
+      const qDisp = prop.U_value * deltaT;
+      risultati[nomeMat].solare += qSolare;       // Wh/m2 (passo 1h)
+      risultati[nomeMat].dispersione += qDisp;    // Wh/m2 (passo 1h)
+    }
+  }
+
+  const tMedia = tempEsterne.reduce((a,b)=>a+b,0) / tempEsterne.length;
+  document.getElementById('outTTarget').textContent = `${tTarget.toFixed(1)}°C`;
+  document.getElementById('outTMedia').textContent = `${tMedia.toFixed(1)}°C`;
+  document.getElementById('invernoMetrics').classList.remove('hidden');
+
+  const tbody = document.getElementById('bodyInverno');
+  tbody.innerHTML = '';
+  for (const nomeMat in MATERIALI_TERMICI) {
+    const prop = MATERIALI_TERMICI[nomeMat];
+    const r = risultati[nomeMat];
+    const guadagno = r.solare / 1000;
+    const perdita = r.dispersione / 1000;
+    const bilancio = guadagno - perdita;
+    let livello, cls;
+    if (bilancio > -2) { livello = 'Basso'; cls = 'basso'; }
+    else if (bilancio > -4) { livello = 'Medio'; cls = 'medio'; }
+    else { livello = 'Alto'; cls = 'alto'; }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${nomeMat}</td>
+      <td class="num">${prop.U_value.toFixed(1)}</td>
+      <td class="num">${guadagno.toFixed(2)}</td>
+      <td class="num">${perdita.toFixed(2)}</td>
+      <td class="num">${bilancio.toFixed(2)}</td>
+      <td><span class="badge ${cls}">${livello}</span></td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('tabellaInverno').classList.remove('hidden');
+
+  statusEl.className = 'status ok'; statusEl.textContent = 'Calcolo completato.';
+}
+
+// Calcolo iniziale all'apertura
+calcolaEstate();
+calcolaInverno();
+</script>
+</body>
+</html>

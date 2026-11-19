@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-sole — Radiazione solare e accrescimento fotosintetico</title>
+<style>
+  :root{
+    --bg:#0d0f10;
+    --panel:#15181a;
+    --border:#2a2f33;
+    --text:#d7dbde;
+    --dim:#8a9198;
+    --accent:#4fd67a;
+    --accent2:#5aa9e6;
+    --warn:#e6b45a;
+    --mono:'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    margin:0;
+    padding:24px;
+    line-height:1.5;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  h1{
+    font-size:1.3em;
+    color:var(--accent);
+    margin:0 0 4px 0;
+  }
+  .sub{color:var(--dim);font-size:0.85em;margin-bottom:20px;}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 18px;
+    margin-bottom:16px;
+  }
+  label{display:block;font-size:0.8em;color:var(--dim);margin-bottom:4px;}
+  input, select, button{
+    font-family:var(--mono);
+    background:#0a0c0d;
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:8px 10px;
+    font-size:0.9em;
+  }
+  input:focus, select:focus{outline:1px solid var(--accent2);}
+  .row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+  .row > div{flex:1;min-width:160px;}
+  button{
+    cursor:pointer;
+    background:#1c2b22;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    transition:background 0.15s;
+  }
+  button:hover{background:#24382c;}
+  button.secondary{
+    border-color:var(--accent2);
+    color:var(--accent2);
+    background:#182531;
+  }
+  button.secondary:hover{background:#1f2f3d;}
+  #geoResults{margin-top:8px;font-size:0.82em;}
+  .geo-item{
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    margin-bottom:4px;
+    cursor:pointer;
+    color:var(--dim);
+  }
+  .geo-item:hover{border-color:var(--accent2);color:var(--text);}
+  .status{font-size:0.8em;color:var(--dim);margin-top:6px;min-height:1.2em;}
+  .status.err{color:#e66a6a;}
+  .status.ok{color:var(--accent);}
+  h2{
+    font-size:1em;
+    color:var(--accent2);
+    border-bottom:1px solid var(--border);
+    padding-bottom:6px;
+    margin:0 0 12px 0;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+    gap:10px;
+  }
+  .metric{
+    background:#0a0c0d;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px 12px;
+  }
+  .metric .label{color:var(--dim);font-size:0.75em;text-transform:uppercase;letter-spacing:0.03em;}
+  .metric .value{font-size:1.15em;color:var(--text);margin-top:2px;}
+  .metric .value.accent{color:var(--accent);}
+  .metric .value.accent2{color:var(--accent2);}
+  table{width:100%;border-collapse:collapse;font-size:0.85em;}
+  th, td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);}
+  th{color:var(--dim);font-weight:normal;font-size:0.8em;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .category{color:var(--accent2);font-size:0.75em;padding-top:10px;text-transform:uppercase;letter-spacing:0.03em;}
+  .hint{color:var(--dim);font-size:0.78em;margin-top:4px;}
+  .hidden{display:none;}
+  footer{color:var(--dim);font-size:0.75em;text-align:center;margin-top:24px;}
+  a{color:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>☀ ric-sole</h1>
+  <div class="sub">Radiazione solare, PAR, efficienza fotosintetica e accrescimento stimato — geocoding globale</div>
+
+  <div class="panel">
+    <h2>Località</h2>
+    <div class="row">
+      <div style="flex:2;">
+        <label>Cerca luogo (città, indirizzo, nome...)</label>
+        <input type="text" id="geoQuery" placeholder="es. Lavagna, Italia" value="Lavagna, Italia">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="geoSearchBtn">Cerca</button>
+      </div>
+    </div>
+    <div id="geoResults"></div>
+    <div class="row">
+      <div>
+        <label>Latitudine</label>
+        <input type="number" id="lat" step="0.0001" value="44.31">
+      </div>
+      <div>
+        <label>Longitudine</label>
+        <input type="number" id="lon" step="0.0001" value="9.34">
+      </div>
+      <div>
+        <label>Fuso orario (offset UTC, ore)</label>
+        <input type="number" id="tzOffset" step="0.5" value="2">
+      </div>
+    </div>
+    <div class="hint" id="geoLabel">📍 Lavagna (lat=44.31, lon=9.34) — impostazione predefinita</div>
+  </div>
+
+  <div class="panel">
+    <h2>Data e ora</h2>
+    <div class="row">
+      <div>
+        <label>Data</label>
+        <input type="date" id="dataInput">
+      </div>
+      <div>
+        <label>Ora</label>
+        <input type="time" id="oraInput" step="60">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="adessoBtn" class="secondary">Adesso</button>
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="calcBtn">Calcola</button>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:none; display:flex; align-items:center; gap:6px;">
+        <input type="checkbox" id="nuvolositaToggle" style="width:auto;">
+        <label style="margin:0; display:inline;" for="nuvolositaToggle">Applica nuvolosità reale (Open-Meteo)</label>
+      </div>
+    </div>
+    <div class="status" id="statusMsg"></div>
+  </div>
+
+  <div class="panel hidden" id="resultsPanel">
+    <h2>Posizione del sole</h2>
+    <div class="grid">
+      <div class="metric"><div class="label">Data e ora</div><div class="value" id="outDatetime">—</div></div>
+      <div class="metric"><div class="label">Altezza del sole</div><div class="value accent" id="outAlt">—</div></div>
+      <div class="metric"><div class="label">Azimut</div><div class="value" id="outAzi">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="radPanel">
+    <h2>Radiazione ed energia</h2>
+    <div class="grid">
+      <div class="metric"><div class="label">Irradianza</div><div class="value accent" id="outIrr">—</div></div>
+      <div class="metric"><div class="label">Illuminamento</div><div class="value" id="outLux">—</div></div>
+      <div class="metric"><div class="label">Energia (1h) — J/m²</div><div class="value accent2" id="outJ">—</div></div>
+      <div class="metric"><div class="label">Energia (1h) — kWh/m²</div><div class="value accent2" id="outKwh">—</div></div>
+      <div class="metric"><div class="label">PAR</div><div class="value" id="outParW">—</div></div>
+      <div class="metric"><div class="label">PAR (fotoni)</div><div class="value" id="outParUmol">—</div></div>
+      <div class="metric"><div class="label">Efficienza fotosintetica stimata</div><div class="value accent" id="outPef">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="nuvolePanel">
+    <h2>Nuvolosità reale (Open-Meteo)</h2>
+    <div class="hint" id="nuvoleHint">—</div>
+    <div class="grid">
+      <div class="metric"><div class="label">Nuvolosità totale</div><div class="value" id="outCloudTot">—</div></div>
+      <div class="metric"><div class="label">Bassa / media / alta</div><div class="value" id="outCloudLMH">—</div></div>
+      <div class="metric"><div class="label">Irradianza cielo sereno</div><div class="value" id="outIrrSereno">—</div></div>
+      <div class="metric"><div class="label">Irradianza reale</div><div class="value accent" id="outIrrReale">—</div></div>
+      <div class="metric"><div class="label">Attenuazione da nuvolosità</div><div class="value" id="outAttenuazione">—</div></div>
+      <div class="metric"><div class="label">PAR reale</div><div class="value" id="outParReale">—</div></div>
+      <div class="metric"><div class="label">Efficienza fotosintetica reale</div><div class="value accent" id="outPefReale">—</div></div>
+      <div class="metric"><div class="label">Energia reale (1h)</div><div class="value accent2" id="outKwhReale">—</div></div>
+    </div>
+    <div class="hint">L'irradianza "reale" è il dato di radiazione a onda corta modellato da Open-Meteo per l'ora scelta (già influenzato dalla copertura nuvolosa effettiva/prevista). L'irradianza "cielo sereno" resta il valore teorico calcolato dalla sola geometria solare, come nel resto dello strumento.</div>
+  </div>
+
+  <div class="panel hidden" id="growthPanel">
+    <h2>Accrescimento orario stimato</h2>
+    <div class="hint">Basato sull'irradianza istantanea, assunta costante per 1 ora (LUE = efficienza d'uso della luce).</div>
+    <table id="growthTable">
+      <thead>
+        <tr id="growthHeadRow">
+          <th>Essenza</th>
+          <th class="num">g biomassa / m² / h (sereno)</th>
+          <th class="num">g biomassa / pianta / h (sereno)</th>
+        </tr>
+      </thead>
+      <tbody id="growthBody"></tbody>
+    </table>
+  </div>
+
+  <footer>Calcolo posizione solare: algoritmo NOAA Solar Position. Geocoding: <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> &mdash; &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributori di OpenStreetMap</a>.<br>Dati meteo (se attivi): <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a> (CC BY 4.0).<br>Strumento sperimentale: le stime usano modelli semplificati e parametri indicativi; non sostituiscono la valutazione di un tecnico.<br><a href="index.html">&larr; Tutti gli strumenti</a></footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// Tabelle essenze vegetali — LUE (g biomassa / MJ luce assorbita)
+// e superficie fogliare efficace (m²/pianta)
+// ---------------------------------------------------------------
+const ESSENZE = {
+  "Orticole": {
+    "Pomodoro":   { lue: 4.0, area: 0.8 },
+    "Basilico":   { lue: 3.0, area: 0.3 },
+    "Lattuga":    { lue: 3.2, area: 0.2 },
+    "Peperone":   { lue: 3.6, area: 0.6 },
+    "Melanzana":  { lue: 3.5, area: 0.7 },
+    "Zucchina":   { lue: 3.8, area: 1.0 },
+    "Patata":     { lue: 3.4, area: 0.4 },
+    "Fragola":    { lue: 2.9, area: 0.15 },
+    "Cetriolo":   { lue: 3.7, area: 0.9 },
+    "Carota":     { lue: 3.0, area: 0.15 }
+  },
+  "Frutticole": {
+    "Vite":       { lue: 3.5, area: 1.2 },
+    "Olivo":      { lue: 2.2, area: 2.0 },
+    "Limone":     { lue: 2.8, area: 1.5 },
+    "Arancio":    { lue: 2.7, area: 1.6 },
+    "Mandarino":  { lue: 2.6, area: 1.3 },
+    "Pesco":      { lue: 3.1, area: 1.4 },
+    "Melo":       { lue: 3.0, area: 1.6 },
+    "Pero":       { lue: 2.9, area: 1.5 },
+    "Susino":     { lue: 3.0, area: 1.3 },
+    "Ciliegio":   { lue: 2.8, area: 1.7 },
+    "Actinidia (kiwi)": { lue: 3.3, area: 1.8 },
+    "Mandorlo":   { lue: 2.5, area: 1.4 },
+    "Nocciolo":   { lue: 2.6, area: 1.9 },
+    "Castagno":   { lue: 2.3, area: 2.5 }
+  },
+  "Cerealicole ed erbacee estensive": {
+    "Mais":       { lue: 4.2, area: 0.6 },
+    "Girasole":   { lue: 3.8, area: 0.9 },
+    "Grano":      { lue: 3.6, area: 0.1 },
+    "Riso":       { lue: 3.9, area: 0.1 },
+    "Soia":       { lue: 3.3, area: 0.3 },
+    "Erba medica (alfalfa)": { lue: 3.5, area: 0.15 },
+    "Prato polifita": { lue: 3.0, area: 0.05 },
+    "Canapa":     { lue: 3.7, area: 0.5 }
+  },
+  "Forestali e ornamentali": {
+    "Eucalipto":  { lue: 3.2, area: 3.0 },
+    "Pino":       { lue: 2.0, area: 4.0 },
+    "Faggio":     { lue: 2.4, area: 3.5 },
+    "Quercia":    { lue: 2.3, area: 4.0 },
+    "Leccio":     { lue: 2.2, area: 3.2 }
+  }
+};
+
+// ---------------------------------------------------------------
+// Algoritmo posizione solare (NOAA Solar Position Algorithm)
+// Restituisce altezza (°) e azimut (°) per lat/lon/data-ora locale
+// ---------------------------------------------------------------
+function toJulianDay(date) {
+  // date è un oggetto Date in UTC
+  return (date.getTime() / 86400000) + 2440587.5;
+}
+
+function solarPosition(dateUTC, lat, lon) {
+  const jd = toJulianDay(dateUTC);
+  const jc = (jd - 2451545.0) / 36525.0;
+
+  const geomMeanLongSun = (280.46646 + jc * (36000.76983 + jc * 0.0003032)) % 360;
+  const geomMeanAnomSun = 357.52911 + jc * (35999.05029 - 0.0001537 * jc);
+  const eccentEarthOrbit = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc);
+
+  const gmasRad = geomMeanAnomSun * Math.PI / 180;
+  const sunEqCtr = Math.sin(gmasRad) * (1.914602 - jc * (0.004817 + 0.000014 * jc))
+                 + Math.sin(2 * gmasRad) * (0.019993 - 0.000101 * jc)
+                 + Math.sin(3 * gmasRad) * 0.000289;
+
+  const sunTrueLong = geomMeanLongSun + sunEqCtr;
+  const sunAppLong = sunTrueLong - 0.00569 - 0.00478 * Math.sin((125.04 - 1934.136 * jc) * Math.PI / 180);
+
+  const meanObliqEcliptic = 23 + (26 + ((21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813)))) / 60) / 60;
+  const obliqCorr = meanObliqEcliptic + 0.00256 * Math.cos((125.04 - 1934.136 * jc) * Math.PI / 180);
+
+  const sunDeclin = Math.asin(Math.sin(obliqCorr * Math.PI / 180) * Math.sin(sunAppLong * Math.PI / 180)) * 180 / Math.PI;
+
+  const varY = Math.tan((obliqCorr / 2) * Math.PI / 180) * Math.tan((obliqCorr / 2) * Math.PI / 180);
+  const eccentRad = eccentEarthOrbit;
+  const eqOfTime = 4 * (180 / Math.PI) * (
+      varY * Math.sin(2 * geomMeanLongSun * Math.PI / 180)
+      - 2 * eccentRad * Math.sin(gmasRad)
+      + 4 * eccentRad * varY * Math.sin(gmasRad) * Math.cos(2 * geomMeanLongSun * Math.PI / 180)
+      - 0.5 * varY * varY * Math.sin(4 * geomMeanLongSun * Math.PI / 180)
+      - 1.25 * eccentRad * eccentRad * Math.sin(2 * gmasRad)
+  );
+
+  // Tempo solare vero (minuti dalla mezzanotte UTC)
+  const utcMinutes = dateUTC.getUTCHours() * 60 + dateUTC.getUTCMinutes() + dateUTC.getUTCSeconds() / 60;
+  let trueSolarTime = (utcMinutes + eqOfTime + 4 * lon) % 1440;
+  if (trueSolarTime < 0) trueSolarTime += 1440;
+
+  let hourAngle = trueSolarTime / 4 - 180;
+  if (hourAngle < -180) hourAngle += 360;
+
+  const latRad = lat * Math.PI / 180;
+  const declRad = sunDeclin * Math.PI / 180;
+  const haRad = hourAngle * Math.PI / 180;
+
+  const zenithRad = Math.acos(
+    Math.sin(latRad) * Math.sin(declRad) +
+    Math.cos(latRad) * Math.cos(declRad) * Math.cos(haRad)
+  );
+  const elevation = 90 - (zenithRad * 180 / Math.PI);
+
+  // Azimut (da nord, orario)
+  let azDenom = (Math.cos(latRad) * Math.sin(zenithRad));
+  let azRad;
+  if (Math.abs(azDenom) > 0.0001) {
+    let cosAz = (Math.sin(latRad) * Math.cos(zenithRad) - Math.sin(declRad)) / azDenom;
+    cosAz = Math.max(-1, Math.min(1, cosAz));
+    azRad = Math.acos(cosAz);
+  } else {
+    azRad = 0;
+  }
+  let azimuth;
+  if (hourAngle > 0) {
+    azimuth = (azRad * 180 / Math.PI + 180) % 360;
+  } else {
+    azimuth = (540 - azRad * 180 / Math.PI) % 360;
+  }
+
+  return { altitude: elevation, azimuth: azimuth };
+}
+
+// ---------------------------------------------------------------
+// Modello radiativo / fotosintetico (stessa logica dello script Python)
+// ---------------------------------------------------------------
+function radiazioneELux(altezzaGradi) {
+  const I0 = 1000; // W/m², cielo sereno
+  const h = altezzaGradi * Math.PI / 180;
+  const I = Math.max(0, I0 * Math.sin(h));
+  const lux = I * 120;
+  return { I, lux };
+}
+
+function parDaI(I) {
+  const parW = I * 0.45;
+  const parUmol = parW * 4.6;
+  return { parW, parUmol };
+}
+
+function efficienzaFotosintetica(I) {
+  const k = 300;
+  const pef = 1 - Math.exp(-I / k);
+  return pef * 100;
+}
+
+function energiaOraria(I) {
+  const jm2 = I * 3600;          // J/m² in un'ora a irradianza costante I
+  const kwhm2 = jm2 / 3_600_000; // kWh/m²
+  return { jm2, kwhm2 };
+}
+
+function accrescimentoM2(I) {
+  const mj = (I * 3600) / 1_000_000; // MJ/m²/h
+  const risultati = {};
+  for (const cat in ESSENZE) {
+    for (const pianta in ESSENZE[cat]) {
+      risultati[pianta] = ESSENZE[cat][pianta].lue * mj;
+    }
+  }
+  return risultati;
+}
+
+// ---------------------------------------------------------------
+// Nuvolosità e radiazione reale (Open-Meteo)
+// ---------------------------------------------------------------
+async function fetchNuvolosita(lat, lon, dateUTC) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&hourly=shortwave_radiation,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high`
+    + `&timezone=UTC&past_days=92&forecast_days=16`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Errore nel recupero dati meteo Open-Meteo');
+  const data = await resp.json();
+
+  // Cerco l'ora UTC più vicina a dateUTC nell'array orario restituito
+  const target = new Date(Date.UTC(
+    dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate(), dateUTC.getUTCHours()
+  ));
+  const times = data.hourly.time; // es. "2026-08-24T13:00"
+  let idx = times.findIndex(t => t === target.toISOString().slice(0, 13) + ':00');
+  if (idx === -1) {
+    throw new Error('Data fuori dal range disponibile (Open-Meteo copre da ~92 giorni fa a 16 giorni nel futuro).');
+  }
+
+  return {
+    radiazione: data.hourly.shortwave_radiation[idx],
+    cloudTot: data.hourly.cloudcover[idx],
+    cloudLow: data.hourly.cloudcover_low[idx],
+    cloudMid: data.hourly.cloudcover_mid[idx],
+    cloudHigh: data.hourly.cloudcover_high[idx]
+  };
+}
+
+// ---------------------------------------------------------------
+// UI
+// ---------------------------------------------------------------
+const dataInput = document.getElementById('dataInput');
+const oraInput = document.getElementById('oraInput');
+const statusMsg = document.getElementById('statusMsg');
+
+function setDefaultDateTime() {
+  const now = new Date();
+  dataInput.value = now.toISOString().slice(0, 10);
+  oraInput.value = now.toTimeString().slice(0, 5);
+}
+setDefaultDateTime();
+
+document.getElementById('adessoBtn').addEventListener('click', () => {
+  setDefaultDateTime();
+  calcola();
+});
+
+document.getElementById('geoSearchBtn').addEventListener('click', geocodeSearch);
+document.getElementById('geoQuery').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); geocodeSearch(); }
+});
+
+async function geocodeSearch() {
+  const q = document.getElementById('geoQuery').value.trim();
+  const resultsDiv = document.getElementById('geoResults');
+  if (!q) return;
+  resultsDiv.innerHTML = '<div class="hint">Ricerca in corso…</div>';
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
+    const resp = await fetch(url, { headers: { 'Accept-Language': 'it' } });
+    if (!resp.ok) throw new Error('Errore rete');
+    const data = await resp.json();
+    if (!data.length) {
+      resultsDiv.innerHTML = '<div class="hint">Nessun risultato trovato.</div>';
+      return;
+    }
+    resultsDiv.innerHTML = '';
+    data.forEach(place => {
+      const div = document.createElement('div');
+      div.className = 'geo-item';
+      div.textContent = `📍 ${place.display_name} (${parseFloat(place.lat).toFixed(4)}, ${parseFloat(place.lon).toFixed(4)})`;
+      div.addEventListener('click', () => {
+        document.getElementById('lat').value = parseFloat(place.lat).toFixed(4);
+        document.getElementById('lon').value = parseFloat(place.lon).toFixed(4);
+        document.getElementById('geoLabel').textContent = `📍 ${place.display_name} (lat=${parseFloat(place.lat).toFixed(4)}, lon=${parseFloat(place.lon).toFixed(4)})`;
+        resultsDiv.innerHTML = '';
+        stimaFusoOrario(parseFloat(place.lon));
+      });
+      resultsDiv.appendChild(div);
+    });
+  } catch (err) {
+    resultsDiv.innerHTML = `<div class="hint">Errore durante la ricerca: ${err.message}</div>`;
+  }
+}
+
+function stimaFusoOrario(lon) {
+  // Stima approssimativa dell'offset UTC dalla longitudine (15° per ora)
+  const stima = Math.round(lon / 15);
+  document.getElementById('tzOffset').value = stima;
+}
+
+document.getElementById('calcBtn').addEventListener('click', calcola);
+
+async function calcola() {
+  statusMsg.className = 'status';
+  statusMsg.textContent = '';
+
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+
+  if (isNaN(lat) || isNaN(lon)) {
+    statusMsg.className = 'status err';
+    statusMsg.textContent = 'Latitudine/longitudine non valide.';
+    return;
+  }
+  if (!dataInput.value || !oraInput.value) {
+    statusMsg.className = 'status err';
+    statusMsg.textContent = 'Data e ora sono obbligatorie.';
+    return;
+  }
+
+  const [anno, mese, giorno] = dataInput.value.split('-').map(Number);
+  const [hh, mm] = oraInput.value.split(':').map(Number);
+
+  // Costruisco la data come UTC applicando l'offset del fuso orario locale
+  const dateUTC = new Date(Date.UTC(anno, mese - 1, giorno, hh, mm) - tzOffset * 3600 * 1000);
+
+  const { altitude, azimuth } = solarPosition(dateUTC, lat, lon);
+  const { I, lux } = radiazioneELux(altitude);
+  const { parW, parUmol } = parDaI(I);
+  const pef = efficienzaFotosintetica(I);
+  const { jm2, kwhm2 } = energiaOraria(I);
+  const crescitaM2 = accrescimentoM2(I);
+
+  const dtLocale = new Date(Date.UTC(anno, mese - 1, giorno, hh, mm));
+  const dtLabel = dtLocale.toLocaleString('it-IT', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+  }) + ` (UTC${tzOffset >= 0 ? '+' : ''}${tzOffset})`;
+
+  document.getElementById('outDatetime').textContent = dtLabel;
+  document.getElementById('outAlt').textContent = `${altitude.toFixed(2)}°`;
+  document.getElementById('outAzi').textContent = `${azimuth.toFixed(2)}°`;
+
+  document.getElementById('outIrr').textContent = `${I.toFixed(1)} W/m²`;
+  document.getElementById('outLux').textContent = `${lux.toFixed(0)} lux`;
+  document.getElementById('outJ').textContent = `${jm2.toFixed(0)} J/m²`;
+  document.getElementById('outKwh').textContent = `${kwhm2.toFixed(3)} kWh/m²`;
+  document.getElementById('outParW').textContent = `${parW.toFixed(1)} W/m²`;
+  document.getElementById('outParUmol').textContent = `${parUmol.toFixed(0)} μmol/m²/s`;
+  document.getElementById('outPef').textContent = `${pef.toFixed(1)}%`;
+
+  // ---- Nuvolosità reale (opzionale) ----
+  const usaNuvolosita = document.getElementById('nuvolositaToggle').checked;
+  const nuvolePanel = document.getElementById('nuvolePanel');
+  let crescitaM2Reale = null;
+  let datiMeteo = null;
+
+  if (usaNuvolosita) {
+    document.getElementById('nuvoleHint').textContent = 'Recupero dati meteo da Open-Meteo…';
+    nuvolePanel.classList.remove('hidden');
+    try {
+      datiMeteo = await fetchNuvolosita(lat, lon, dateUTC);
+      const Ireale = Math.max(0, datiMeteo.radiazione);
+      const attenuazione = I > 0 ? Math.max(0, Math.min(100, (1 - Ireale / I) * 100)) : 0;
+      const { parW: parWReale, parUmol: parUmolReale } = parDaI(Ireale);
+      const pefReale = efficienzaFotosintetica(Ireale);
+      const { kwhm2: kwhm2Reale } = energiaOraria(Ireale);
+      crescitaM2Reale = accrescimentoM2(Ireale);
+
+      document.getElementById('nuvoleHint').textContent =
+        `Dato orario Open-Meteo per ${dtLabel.split(' (')[0]} UTC.`;
+      document.getElementById('outCloudTot').textContent = `${datiMeteo.cloudTot.toFixed(0)}%`;
+      document.getElementById('outCloudLMH').textContent =
+        `${datiMeteo.cloudLow.toFixed(0)}% / ${datiMeteo.cloudMid.toFixed(0)}% / ${datiMeteo.cloudHigh.toFixed(0)}%`;
+      document.getElementById('outIrrSereno').textContent = `${I.toFixed(1)} W/m²`;
+      document.getElementById('outIrrReale').textContent = `${Ireale.toFixed(1)} W/m²`;
+      document.getElementById('outAttenuazione').textContent = `${attenuazione.toFixed(0)}%`;
+      document.getElementById('outParReale').textContent =
+        `${parWReale.toFixed(1)} W/m² (${parUmolReale.toFixed(0)} μmol/m²/s)`;
+      document.getElementById('outPefReale').textContent = `${pefReale.toFixed(1)}%`;
+      document.getElementById('outKwhReale').textContent = `${kwhm2Reale.toFixed(3)} kWh/m²`;
+    } catch (err) {
+      document.getElementById('nuvoleHint').textContent = `Errore: ${err.message}`;
+      crescitaM2Reale = null;
+    }
+  } else {
+    nuvolePanel.classList.add('hidden');
+  }
+
+  // ---- Intestazione tabella accrescimento (dinamica in base alla nuvolosità) ----
+  const headRow = document.getElementById('growthHeadRow');
+  if (crescitaM2Reale) {
+    headRow.innerHTML = `<th>Essenza</th>
+      <th class="num">g/m²/h (sereno)</th>
+      <th class="num">g/m²/h (reale)</th>
+      <th class="num">variazione %</th>`;
+  } else {
+    headRow.innerHTML = `<th>Essenza</th>
+      <th class="num">g biomassa / m² / h</th>
+      <th class="num">g biomassa / pianta / h</th>`;
+  }
+
+  const tbody = document.getElementById('growthBody');
+  tbody.innerHTML = '';
+  for (const cat in ESSENZE) {
+    const trCat = document.createElement('tr');
+    const tdCat = document.createElement('td');
+    tdCat.colSpan = crescitaM2Reale ? 4 : 3;
+    tdCat.className = 'category';
+    tdCat.textContent = cat;
+    trCat.appendChild(tdCat);
+    tbody.appendChild(trCat);
+
+    for (const pianta in ESSENZE[cat]) {
+      const gM2h = crescitaM2[pianta];
+      const tr = document.createElement('tr');
+      if (crescitaM2Reale) {
+        const gM2hReale = crescitaM2Reale[pianta];
+        const variazione = gM2h > 0 ? ((gM2hReale - gM2h) / gM2h) * 100 : 0;
+        tr.innerHTML = `<td>${pianta}</td>
+          <td class="num">${gM2h.toFixed(2)}</td>
+          <td class="num">${gM2hReale.toFixed(2)}</td>
+          <td class="num">${variazione.toFixed(0)}%</td>`;
+      } else {
+        const area = ESSENZE[cat][pianta].area;
+        const gPiantaH = gM2h * area;
+        tr.innerHTML = `<td>${pianta}</td><td class="num">${gM2h.toFixed(2)}</td><td class="num">${gPiantaH.toFixed(2)}</td>`;
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  document.getElementById('resultsPanel').classList.remove('hidden');
+  document.getElementById('radPanel').classList.remove('hidden');
+  document.getElementById('growthPanel').classList.remove('hidden');
+
+  if (altitude < 0) {
+    statusMsg.className = 'status';
+    statusMsg.textContent = '🌙 Il sole è sotto l\'orizzonte a quest\'ora: irradianza e accrescimento risultano nulli.';
+  } else {
+    statusMsg.className = 'status ok';
+    statusMsg.textContent = 'Calcolo completato.';
+  }
+}
+
+// Calcolo iniziale all'apertura
+calcola();
+</script>
+</body>
+</html>

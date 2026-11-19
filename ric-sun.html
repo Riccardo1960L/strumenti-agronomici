@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-sun — parametri solari e accrescimento colturale</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    margin: 0;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 720px; }
+  h1 {
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+  }
+  form {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  label { font-size: 0.8rem; color: #8b949e; display: block; margin-bottom: 0.25rem; }
+  input, select {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+  }
+  .full { grid-column: 1 / -1; }
+  button {
+    grid-column: 1 / -1;
+    background: var(--accent);
+    color: #0d1117;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-family: var(--mono);
+    cursor: pointer;
+    margin-top: 0.4rem;
+  }
+  button:hover { opacity: 0.9; }
+  #output {
+    white-space: pre-wrap;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-top: 1rem;
+    min-height: 100px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .err { color: #f85149; }
+  footer { color: #8b949e; font-size: 0.75rem; text-align: center; margin-top: 1.5rem; line-height: 1.6; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>☀ ric-sun — parametri solari, PAR, fotosintesi e accrescimento</h1>
+
+  <form id="form">
+    <div class="full">
+      <label>Luogo (es. Lavagna, Milano, Tokyo)</label>
+      <input id="luogo" type="text" value="Lavagna" required>
+    </div>
+
+    <div>
+      <label>Data</label>
+      <input id="data" type="text" value="adesso" placeholder="YYYY-MM-DD oppure 'adesso'">
+    </div>
+    <div>
+      <label>Ora (HH:MM)</label>
+      <input id="ora" type="text" placeholder="es. 14:30">
+    </div>
+
+    <div>
+      <label>Fuso orario (ore UTC+)</label>
+      <input id="tz" type="number" value="2" step="1">
+    </div>
+    <div></div>
+
+    <div class="full" style="border-top:1px solid var(--border);padding-top:0.8rem;margin-top:0.2rem;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input id="reteAttiva" type="checkbox" style="width:auto;">
+        Attiva rete ombreggiante
+      </label>
+    </div>
+    <div>
+      <label>Ombreggiamento nominale a incidenza perpendicolare (%)</label>
+      <input id="tauNominale" type="number" step="1" value="40">
+    </div>
+    <div>
+      <label>Quota di luce diffusa dalla rete (%)</label>
+      <input id="kScattering" type="number" step="1" value="10">
+    </div>
+    <div>
+      <label>Inclinazione rete (° dall'orizzontale)</label>
+      <input id="surfaceTilt" type="number" step="1" value="15">
+    </div>
+    <div>
+      <label>Orientamento rete (° azimut, 180=Sud)</label>
+      <input id="surfaceAzimuth" type="number" step="1" value="180">
+    </div>
+
+    <button type="submit">Calcola</button>
+  </form>
+
+  <div id="output">Inserisci i dati e premi "Calcola".</div>
+
+  <footer>Calcolo posizione solare: algoritmo NOAA Solar Position. Geocoding: <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> &mdash; &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributori di OpenStreetMap</a>.<br>Strumento sperimentale: le stime usano modelli semplificati e parametri indicativi; non sostituiscono la valutazione di un tecnico.<br><a href="index.html">&larr; Tutti gli strumenti</a></footer>
+</div>
+
+<script>
+// ---------- Essenze vegetali — LUE (g biomassa/MJ) e superficie fogliare (m²/pianta) ----------
+const ESSENZE = {
+  "Orticole": {
+    "Pomodoro":   { lue: 4.0, area: 0.8 },
+    "Basilico":   { lue: 3.0, area: 0.3 },
+    "Lattuga":    { lue: 3.2, area: 0.2 },
+    "Peperone":   { lue: 3.6, area: 0.6 },
+    "Melanzana":  { lue: 3.5, area: 0.7 },
+    "Zucchina":   { lue: 3.8, area: 1.0 },
+    "Patata":     { lue: 3.4, area: 0.4 },
+    "Fragola":    { lue: 2.9, area: 0.15 },
+    "Cetriolo":   { lue: 3.7, area: 0.9 },
+    "Carota":     { lue: 3.0, area: 0.15 }
+  },
+  "Frutticole": {
+    "Vite":       { lue: 3.5, area: 1.2 },
+    "Olivo":      { lue: 2.2, area: 2.0 },
+    "Limone":     { lue: 2.8, area: 1.5 },
+    "Arancio":    { lue: 2.7, area: 1.6 },
+    "Mandarino":  { lue: 2.6, area: 1.3 },
+    "Pesco":      { lue: 3.1, area: 1.4 },
+    "Melo":       { lue: 3.0, area: 1.6 },
+    "Pero":       { lue: 2.9, area: 1.5 },
+    "Susino":     { lue: 3.0, area: 1.3 },
+    "Ciliegio":   { lue: 2.8, area: 1.7 },
+    "Actinidia (kiwi)": { lue: 3.3, area: 1.8 },
+    "Mandorlo":   { lue: 2.5, area: 1.4 },
+    "Nocciolo":   { lue: 2.6, area: 1.9 },
+    "Castagno":   { lue: 2.3, area: 2.5 }
+  },
+  "Cerealicole ed erbacee estensive": {
+    "Mais":       { lue: 4.2, area: 0.6 },
+    "Girasole":   { lue: 3.8, area: 0.9 },
+    "Grano":      { lue: 3.6, area: 0.1 },
+    "Riso":       { lue: 3.9, area: 0.1 },
+    "Soia":       { lue: 3.3, area: 0.3 },
+    "Erba medica (alfalfa)": { lue: 3.5, area: 0.15 },
+    "Prato polifita": { lue: 3.0, area: 0.05 },
+    "Canapa":     { lue: 3.7, area: 0.5 }
+  },
+  "Forestali e ornamentali": {
+    "Eucalipto":  { lue: 3.2, area: 3.0 },
+    "Pino":       { lue: 2.0, area: 4.0 },
+    "Faggio":     { lue: 2.4, area: 3.5 },
+    "Quercia":    { lue: 2.3, area: 4.0 },
+    "Leccio":     { lue: 2.2, area: 3.2 }
+  }
+};
+
+// ---------- Utility ----------
+const toRad = d => d * Math.PI / 180;
+const toDeg = r => r * 180 / Math.PI;
+function normalizeAngle(a) { a = a % 360; if (a < 0) a += 360; return a; }
+
+// ---------- Geocoding (Nominatim, equivalente a requests.get) ----------
+async function geocodeLuogo(nome) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(nome)}&format=json&limit=1`;
+  const r = await fetch(url);
+  const data = await r.json();
+  if (!data || data.length === 0) {
+    throw new Error(`Impossibile trovare il luogo: ${nome}`);
+  }
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon),
+    displayName: data[0].display_name
+  };
+}
+
+// ---------- Posizione solare (algoritmo NOAA/Meeus, sostituisce pysolar) ----------
+function julianDay(dateUTC) {
+  let year = dateUTC.getUTCFullYear();
+  let month = dateUTC.getUTCMonth() + 1;
+  const day = dateUTC.getUTCDate() +
+    (dateUTC.getUTCHours() + dateUTC.getUTCMinutes() / 60 + dateUTC.getUTCSeconds() / 3600) / 24;
+  if (month <= 2) { year -= 1; month += 12; }
+  const A = Math.floor(year / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
+}
+
+function solarPosition(dateUTC, lat, lon) {
+  const jd = julianDay(dateUTC);
+  const T = (jd - 2451545.0) / 36525;
+
+  const L0 = normalizeAngle(280.46646 + T * (36000.76983 + T * 0.0003032));
+  const M = normalizeAngle(357.52911 + T * (35999.05029 - 0.0001537 * T));
+  const e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+
+  const C = Math.sin(toRad(M)) * (1.914602 - T * (0.004817 + 0.000014 * T))
+          + Math.sin(toRad(2 * M)) * (0.019993 - 0.000101 * T)
+          + Math.sin(toRad(3 * M)) * 0.000289;
+
+  const trueLong = L0 + C;
+  const omega = 125.04 - 1934.136 * T;
+  const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(toRad(omega));
+
+  const epsilon0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60;
+  const epsilon = epsilon0 + 0.00256 * Math.cos(toRad(omega));
+
+  const delta = toDeg(Math.asin(Math.sin(toRad(epsilon)) * Math.sin(toRad(lambda)))); // declinazione
+
+  const y = Math.pow(Math.tan(toRad(epsilon / 2)), 2);
+  const eqTime = 4 * toDeg(
+    y * Math.sin(2 * toRad(L0))
+    - 2 * e * Math.sin(toRad(M))
+    + 4 * e * y * Math.sin(toRad(M)) * Math.cos(2 * toRad(L0))
+    - 0.5 * y * y * Math.sin(4 * toRad(L0))
+    - 1.25 * e * e * Math.sin(2 * toRad(M))
+  );
+
+  const timeUTCmin = dateUTC.getUTCHours() * 60 + dateUTC.getUTCMinutes() + dateUTC.getUTCSeconds() / 60;
+  let trueSolarTime = (timeUTCmin + eqTime + 4 * lon) % 1440;
+  if (trueSolarTime < 0) trueSolarTime += 1440;
+
+  let hourAngle = trueSolarTime / 4 - 180;
+  if (hourAngle < -180) hourAngle += 360;
+
+  const zenith = toDeg(Math.acos(
+    Math.sin(toRad(lat)) * Math.sin(toRad(delta)) +
+    Math.cos(toRad(lat)) * Math.cos(toRad(delta)) * Math.cos(toRad(hourAngle))
+  ));
+  const altitude = 90 - zenith;
+
+  const azDenom = Math.cos(toRad(lat)) * Math.sin(toRad(zenith));
+  let azimuth;
+  if (Math.abs(azDenom) > 0.001) {
+    let cosAz = (Math.sin(toRad(lat)) * Math.cos(toRad(zenith)) - Math.sin(toRad(delta))) / azDenom;
+    cosAz = Math.max(-1, Math.min(1, cosAz));
+    azimuth = 180 - toDeg(Math.acos(cosAz));
+    if (hourAngle > 0) azimuth = -azimuth;
+    azimuth = normalizeAngle(azimuth);
+  } else {
+    azimuth = lat > 0 ? 180 : 0;
+  }
+
+  return { altitude, azimuth };
+}
+
+// ---------- Fisica della radiazione (identica allo script Python) ----------
+function radiazioneELux(altezzaGradi) {
+  const I0 = 1000; // W/m², cielo sereno
+  const h = toRad(altezzaGradi);
+  const I = Math.max(0, I0 * Math.sin(h));
+  const lux = I * 120;
+  return { I, lux };
+}
+
+function parDaI(I) {
+  const parW = I * 0.45;
+  const parUmol = parW * 4.6;
+  return { parW, parUmol };
+}
+
+function efficienzaFotosintetica(I) {
+  const k = 300;
+  const pef = 1 - Math.exp(-I / k);
+  return pef * 100;
+}
+
+function accrescimentoM2(I) {
+  const mj = (I * 3600) / 1_000_000;
+  const risultati = {};
+  for (const cat in ESSENZE) {
+    for (const pianta in ESSENZE[cat]) {
+      risultati[pianta] = ESSENZE[cat][pianta].lue * mj;
+    }
+  }
+  return risultati;
+}
+
+function accrescimentoPianta(crescitaM2) {
+  const risultati = {};
+  for (const cat in ESSENZE) {
+    for (const pianta in ESSENZE[cat]) {
+      const area = ESSENZE[cat][pianta].area;
+      risultati[pianta] = crescitaM2[pianta] * area;
+    }
+  }
+  return risultati;
+}
+
+// ---------- Rete ombreggiante: POA (piano inclinato) + AOI + ombreggiamento angolo-corretto ----------
+function calcolaPOAeAOI(altezzaGradi, azimuthGradi, I, tiltGradi, surfAzGradi) {
+  const zenith = 90 - altezzaGradi;
+  const zenithRad = toRad(zenith);
+  const azimuthRad = toRad(azimuthGradi);
+  const tiltRad = toRad(tiltGradi);
+  const surfAzRad = toRad(surfAzGradi);
+
+  const cosAoi = Math.cos(zenithRad) * Math.cos(tiltRad) +
+                 Math.sin(zenithRad) * Math.sin(tiltRad) * Math.cos(azimuthRad - surfAzRad);
+  const aoiRad = Math.acos(Math.max(-1, Math.min(1, cosAoi)));
+  const aoiGradi = toDeg(aoiRad);
+
+  // Frazione diffusa clear-sky stimata (~12%), dato che il modello di irradianza
+  // di base qui è semplificato (I0·sin(altezza)) e non un vero Ineichen/pvlib.
+  const kd = 0.12;
+  const dhi = kd * I;
+  const dniStima = altezzaGradi > 0 ? (I - dhi) / Math.sin(toRad(altezzaGradi)) : 0;
+
+  const albedo = 0.20;
+  const poaBeam = Math.max(0, dniStima * Math.cos(aoiRad));
+  const poaDiffuse = dhi * (1 + Math.cos(tiltRad)) / 2;
+  const poaGround = I * albedo * (1 - Math.cos(tiltRad)) / 2;
+  const poaGlobal = poaBeam + poaDiffuse + poaGround;
+
+  return { aoiGradi, poaGlobal };
+}
+
+function reteOmbreggiante(poaGlobal, aoiGradi, tauNominale, kScattering) {
+  const aoiCapGradi = Math.min(aoiGradi, 80);
+  const aoiCapRad = toRad(aoiCapGradi);
+  let tauEff = 1 - Math.pow(1 - tauNominale, 1 / Math.cos(aoiCapRad));
+  tauEff = Math.min(tauEff, 0.95);
+  const radSotto = poaGlobal * (1 - tauEff);
+  const parIncidentePoa = poaGlobal * 0.45 * 4.6;
+  const parSotto = parIncidentePoa * (1 - tauEff) * (1 + kScattering);
+  const jm2Sotto = radSotto * 3600;
+  const kwhm2Sotto = jm2Sotto / 3_600_000;
+  return { tauEff, radSotto, parSotto, jm2Sotto, kwhm2Sotto };
+}
+
+// ---------- Main ----------
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const out = document.getElementById("output");
+  out.textContent = "Calcolo in corso...";
+
+  const luogo = document.getElementById("luogo").value.trim();
+  const dataStr = document.getElementById("data").value.trim();
+  const oraStr = document.getElementById("ora").value.trim();
+  const tzOffset = parseFloat(document.getElementById("tz").value || "2");
+
+  try {
+    // Geocoding
+    const { lat, lon, displayName } = await geocodeLuogo(luogo);
+
+    // Costruzione data/ora (fuso fisso, come nello script originale)
+    let dtLocal;
+    if (dataStr.toLowerCase() === "adesso") {
+      dtLocal = new Date(Date.now() + tzOffset * 3600 * 1000); // istante attuale espresso nel fuso indicato
+    } else {
+      if (!oraStr) throw new Error("Devi fornire anche l'ora (HH:MM).");
+      const [anno, mese, giorno] = dataStr.split("-").map(Number);
+      const [hh, mm] = oraStr.split(":").map(Number);
+      // Costruiamo l'istante come se fosse nel fuso indicato, poi convertiamo in UTC
+      dtLocal = new Date(Date.UTC(anno, mese - 1, giorno, hh, mm));
+    }
+
+    // Convertiamo da "ora locale nel fuso tzOffset" a UTC vero
+    const dateUTC = new Date(dtLocal.getTime() - tzOffset * 3600 * 1000);
+
+    const { altitude: alt, azimuth: azi } = solarPosition(dateUTC, lat, lon);
+    const { I, lux } = radiazioneELux(alt);
+    const { parW, parUmol } = parDaI(I);
+    const pef = efficienzaFotosintetica(I);
+
+    const reteAttiva = document.getElementById("reteAttiva").checked;
+    let radPerAccrescimento = I;
+    let netTesto = "";
+    if (reteAttiva) {
+      const tauNominale = parseFloat(document.getElementById("tauNominale").value) / 100;
+      const kScattering = parseFloat(document.getElementById("kScattering").value) / 100;
+      const tiltGradi = parseFloat(document.getElementById("surfaceTilt").value);
+      const surfAzGradi = parseFloat(document.getElementById("surfaceAzimuth").value);
+      const zenith = 90 - alt;
+      if (alt > 0 && zenith < 88) {
+        const { aoiGradi, poaGlobal } = calcolaPOAeAOI(alt, azi, I, tiltGradi, surfAzGradi);
+        const net = reteOmbreggiante(poaGlobal, aoiGradi, tauNominale, kScattering);
+        radPerAccrescimento = net.radSotto;
+        netTesto += `\n🕸 Sotto rete ombreggiante (tilt ${tiltGradi}°, azimut ${surfAzGradi}°):\n`;
+        netTesto += `   - AOI (angolo di incidenza sul piano rete): ${aoiGradi.toFixed(1)}°\n`;
+        netTesto += `   - Radiazione sul piano rete (POA): ${poaGlobal.toFixed(1)} W/m²\n`;
+        netTesto += `   - Ombreggio effettivo (AOI-corretto): ${(net.tauEff * 100).toFixed(1)}%\n`;
+        netTesto += `   - Radiazione sotto rete: ${net.radSotto.toFixed(1)} W/m²\n`;
+        netTesto += `   - Energia sotto rete (1h): ${net.jm2Sotto.toFixed(0)} J/m² (${net.kwhm2Sotto.toFixed(3)} kWh/m²)\n`;
+        netTesto += `   - PAR sotto rete: ${net.parSotto.toFixed(0)} μmol/m²/s\n`;
+        netTesto += `   ⚠ Accrescimento qui sotto calcolato sulla radiazione sotto rete, non a pieno sole.\n`;
+      } else {
+        netTesto += `\n🕸 Rete ombreggiante: sole sotto l'orizzonte o troppo raso (zenit ≥88°) — stima non disponibile a quest'ora.\n`;
+      }
+    }
+
+    const crescitaM2 = accrescimentoM2(radPerAccrescimento);
+    const crescitaPianta = accrescimentoPianta(crescitaM2);
+
+    let testo = "";
+    testo += `📍 Località: ${displayName} (lat=${lat.toFixed(4)}, lon=${lon.toFixed(4)})\n`;
+    testo += `📅 Data e ora locale (UTC+${tzOffset}): ${dtLocal.toISOString().replace("T", " ").slice(0, 16)}\n`;
+    testo += `☀ Altezza del Sole: ${alt.toFixed(2)}°\n`;
+    testo += `🧭 Azimut: ${azi.toFixed(2)}°\n`;
+    testo += `🔆 Irradianza solare: ${I.toFixed(1)} W/m²\n`;
+    testo += `💡 Illuminamento: ${lux.toFixed(0)} lux\n\n`;
+
+    testo += `🔬 PAR (Photosynthetically Active Radiation):\n`;
+    testo += `   - PAR: ${parW.toFixed(1)} W/m²\n`;
+    testo += `   - PAR: ${parUmol.toFixed(0)} μmol/m²/s\n\n`;
+
+    testo += `🌿 Efficienza fotosintetica stimata: ${pef.toFixed(1)}%\n`;
+    testo += netTesto;
+    testo += `\n📈 Accrescimento orario stimato (g biomassa / m² / ora):\n`;
+    for (const cat in ESSENZE) {
+      testo += `\n  ── ${cat} ──\n`;
+      for (const pianta in ESSENZE[cat]) {
+        testo += `   - ${pianta}: ${crescitaM2[pianta].toFixed(2)} g/m²/h\n`;
+      }
+    }
+
+    testo += `\n🌱 Accrescimento orario stimato per pianta (g/pianta/ora):\n`;
+    for (const cat in ESSENZE) {
+      testo += `\n  ── ${cat} ──\n`;
+      for (const pianta in ESSENZE[cat]) {
+        testo += `   - ${pianta}: ${crescitaPianta[pianta].toFixed(2)} g/pianta/h\n`;
+      }
+    }
+
+    out.textContent = testo;
+  } catch (err) {
+    out.innerHTML = `<span class="err">Errore: ${err.message}</span>`;
+  }
+});
+</script>
+</body>
+</html>
