@@ -7,3 +7,5 @@ Aprire `index.html` per la presentazione, oppure usare il sito pubblicato con Gi
 **Avvertenza.** Strumenti sperimentali: modelli semplificati e parametri indicativi, non sostitutivi della valutazione di un tecnico.
 
 **Dati.** Meteo: Open-Meteo.com (CC BY 4.0). Luoghi: Nominatim, © contributori di OpenStreetMap.
+
+**Licenza.** MIT: vedi il file `LICENSE`. Il codice è offerto senza garanzie.
