@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-microirrigazione — Progetto impianto di microirrigazione</title>
+<style>
+  :root{
+    --bg:#0d0f10;
+    --panel:#15181a;
+    --border:#2a2f33;
+    --text:#d7dbde;
+    --dim:#8a9198;
+    --accent:#4fd67a;
+    --accent2:#5aa9e6;
+    --warn:#e6b45a;
+    --bad:#e66a6a;
+    --mono:'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    margin:0;
+    padding:24px;
+    line-height:1.5;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+  h1{font-size:1.3em;color:var(--accent);margin:0 0 4px 0;}
+  .sub{color:var(--dim);font-size:0.85em;margin-bottom:20px;}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 18px;
+    margin-bottom:16px;
+  }
+  h2{
+    font-size:1em;
+    color:var(--accent2);
+    border-bottom:1px solid var(--border);
+    padding-bottom:6px;
+    margin:0 0 12px 0;
+  }
+  label{display:block;font-size:0.8em;color:var(--dim);margin-bottom:4px;}
+  input, select, button{
+    font-family:var(--mono);
+    background:#0a0c0d;
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:8px 10px;
+    font-size:0.9em;
+    width:100%;
+  }
+  input:focus, select:focus{outline:1px solid var(--accent2);}
+  .row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+  .row > div{flex:1;min-width:170px;}
+  button{
+    cursor:pointer;
+    background:#1c2b22;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    transition:background 0.15s;
+    width:auto;
+    white-space:nowrap;
+  }
+  button:hover{background:#24382c;}
+  button.secondary{border-color:var(--accent2);color:var(--accent2);background:#182531;}
+  button.secondary:hover{background:#1f2f3d;}
+  button.small{padding:6px 8px;font-size:0.78em;}
+  #geoResults{margin-top:8px;font-size:0.82em;}
+  .geo-item{
+    padding:6px 8px;border:1px solid var(--border);border-radius:5px;
+    margin-bottom:4px;cursor:pointer;color:var(--dim);
+  }
+  .geo-item:hover{border-color:var(--accent2);color:var(--text);}
+  .hint{color:var(--dim);font-size:0.78em;margin-top:4px;}
+  .status{font-size:0.8em;margin-top:6px;min-height:1.2em;color:var(--dim);}
+  .status.err{color:var(--bad);}
+  .status.ok{color:var(--accent);}
+  .status.warn{color:var(--warn);}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px,1fr));
+    gap:10px;
+    margin-top:12px;
+  }
+  .metric{
+    background:#0a0c0d;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px 12px;
+  }
+  .metric .label{color:var(--dim);font-size:0.75em;text-transform:uppercase;letter-spacing:0.03em;}
+  .metric .value{font-size:1.15em;color:var(--text);margin-top:2px;}
+  .metric .value.accent{color:var(--accent);}
+  .metric .value.accent2{color:var(--accent2);}
+  .metric .value.warn{color:var(--warn);}
+  .metric .value.bad{color:var(--bad);}
+  .inline-btn-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+  .kc-note{font-size:0.78em;color:var(--dim);margin-top:6px;padding:8px 10px;background:#0a0c0d;border:1px solid var(--border);border-radius:6px;}
+  footer{color:var(--dim);font-size:0.75em;text-align:center;margin-top:24px;}
+
+  .avvertenze {
+    background: #1a1710;
+    border: 1px solid var(--warn);
+    border-left: 4px solid var(--warn);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0 0 20px 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+  .avvertenze .av-titolo { color: var(--warn); font-weight: bold; margin-bottom: 6px; }
+  .avvertenze .av-motto { font-style: italic; margin-bottom: 8px; }
+  .avvertenze ul { margin: 0 0 8px 0; padding-left: 18px; }
+  .avvertenze li { margin-bottom: 4px; }
+  .avvertenze .av-fine { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💧 ric-microirrigazione</h1>
+  <div class="sub">Progetto impianto di microirrigazione — Kc automatici, ET₀ da Open-Meteo, stato idrico, portate e perdite di carico</div>
+
+<div class="avvertenze">
+  <div class="av-titolo">⚠ Avvertenze d'uso</div>
+  <div class="av-motto">Piede in campo, testa sui libri, occhi sul monitor.</div>
+  <ul>
+    <li><b>Piede in campo:</b> guardare la coltura e toccare il terreno. Foglie, turgore, colore, umidità reale a varie profondità. Nessun calcolo sostituisce l'osservazione diretta.</li>
+    <li><b>Testa sui libri:</b> i risultati sono stime basate su modelli semplificati (coefficienti colturali, capacità idrica del suolo, ET0). Vanno interpretati con la teoria agronomica, non applicati alla lettera.</li>
+    <li><b>Occhi sul monitor:</b> dati meteo, sensori, tensiometri, immagini da drone o da satellite aiutano a vedere ciò che a occhio non si vede, ma sono un'informazione in più, non una certezza.</li>
+  </ul>
+  <div class="av-fine">Un errore di irrigazione, in difetto o in eccesso, può compromettere mesi di lavoro e comportare costi molto elevati. Questo strumento è didattico e orientativo: <b>le decisioni e le responsabilità restano all'utilizzatore.</b></div>
+</div>
+
+
+  <!-- LOCALITÀ -->
+  <div class="panel">
+    <h2>Località</h2>
+    <div class="row">
+      <div style="flex:2;">
+        <label>Cerca luogo (città, indirizzo, nome...)</label>
+        <input type="text" id="geoQuery" placeholder="es. Lavagna, Italia" value="Lavagna, Italia">
+      </div>
+      <div style="align-self:flex-end;flex:0;">
+        <button id="geoSearchBtn">Cerca</button>
+      </div>
+    </div>
+    <div id="geoResults"></div>
+    <div class="row">
+      <div>
+        <label>Latitudine</label>
+        <input type="number" id="lat" step="0.0001" value="44.31">
+      </div>
+      <div>
+        <label>Longitudine</label>
+        <input type="number" id="lon" step="0.0001" value="9.34">
+      </div>
+    </div>
+    <div class="hint" id="geoLabel">📍 Lavagna (lat=44.31, lon=9.34) — impostazione predefinita</div>
+  </div>
+
+  <!-- SEZIONE 1: ETc -->
+  <div class="panel">
+    <h2>1. Coltura e calcolo ETc</h2>
+    <div class="row">
+      <div>
+        <label>Coltura</label>
+        <select id="coltura"></select>
+      </div>
+      <div>
+        <label>Fase fenologica</label>
+        <select id="fase">
+          <option value="ini">Iniziale</option>
+          <option value="dev">Sviluppo</option>
+          <option value="mid" selected>Intermedia (fioritura/piena vegetazione)</option>
+          <option value="end">Finale (maturazione/senescenza)</option>
+        </select>
+      </div>
+      <div>
+        <label>Kc (automatico, modificabile)</label>
+        <input type="number" step="0.01" id="kc">
+      </div>
+    </div>
+    <div class="kc-note" id="kcNote"></div>
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>ET₀ (mm/giorno)</label>
+        <input type="number" step="0.01" id="et0">
+      </div>
+      <div class="inline-btn-row">
+        <button id="fetchEt0Btn" class="secondary">Ottieni ET₀ da Open-Meteo (oggi)</button>
+      </div>
+    </div>
+    <div class="status" id="et0Status"></div>
+    <div class="row" style="margin-top:8px;">
+      <button id="calcEtcBtn">Calcola ETc</button>
+    </div>
+    <div class="grid" id="etcGrid" style="display:none;">
+      <div class="metric"><div class="label">ETc (fabbisogno lordo coltura)</div><div class="value accent" id="etcResult">—</div></div>
+    </div>
+  </div>
+
+  <!-- SEZIONE 2: TENSIOMETRO -->
+  <div class="panel">
+    <h2>2. Stato idrico del suolo (tensiometro)</h2>
+    <div class="row">
+      <div>
+        <label>Tipo di suolo</label>
+        <select id="soilType">
+          <option value="sabbioso">Sabbioso</option>
+          <option value="franco" selected>Franco (medio impasto)</option>
+          <option value="argilloso">Argilloso</option>
+        </select>
+      </div>
+      <div>
+        <label>Lettura tensiometro (cbar)</label>
+        <input type="number" id="tensio" placeholder="es. 25">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="soilBtn">Valuta stato idrico</button>
+      </div>
+    </div>
+    <div class="grid" id="soilGrid" style="display:none;">
+      <div class="metric"><div class="label">Stato idrico stimato</div><div class="value" id="soilResult">—</div></div>
+    </div>
+    <div class="hint">Le soglie indicative variano con la tessitura del suolo; per decisioni operative affina i valori con osservazioni locali.</div>
+  </div>
+
+  <!-- SEZIONE 3: PORTATA -->
+  <div class="panel">
+    <h2>3. Portata dell'impianto di microirrigazione</h2>
+    <div class="row">
+      <div>
+        <label>Portata per emettitore (L/h)</label>
+        <input type="number" step="0.1" id="qEmitter" value="2.0">
+      </div>
+      <div>
+        <label>Numero emettitori</label>
+        <input type="number" id="nEmitters" value="50">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="flowBtn">Calcola portata totale</button>
+      </div>
+    </div>
+    <div class="grid" id="flowGrid" style="display:none;">
+      <div class="metric"><div class="label">Portata totale impianto</div><div class="value accent" id="flowResultLh">—</div></div>
+      <div class="metric"><div class="label">Portata totale</div><div class="value" id="flowResultLs">—</div></div>
+    </div>
+  </div>
+
+  <!-- SEZIONE 4: PERDITE DI CARICO -->
+  <div class="panel">
+    <h2>4. Perdite di carico (Hazen-Williams, tubo in PE)</h2>
+    <div class="row">
+      <div>
+        <label>Lunghezza linea (m)</label>
+        <input type="number" id="length" value="50">
+      </div>
+      <div>
+        <label>Diametro interno tubo (mm)</label>
+        <input type="number" id="diameter" value="20">
+      </div>
+      <div>
+        <label>Portata totale (L/h)</label>
+        <input type="number" id="flowTotal">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Pendenza (%, positiva = in salita)</label>
+        <input type="number" id="slope" value="0">
+      </div>
+      <div>
+        <label>Coefficiente C (Hazen-Williams, PE ≈ 150)</label>
+        <input type="number" id="cHW" value="150">
+      </div>
+      <div>
+        <label>Scabrezza tubo ε (mm, Darcy-Weisbach, PE ≈ 0.0015)</label>
+        <input type="number" step="0.0001" id="roughness" value="0.0015">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="headLossBtn">Calcola perdite</button>
+      </div>
+    </div>
+    <div class="row">
+      <button id="useFlowBtn" class="secondary small">Usa la portata totale calcolata al punto 3</button>
+    </div>
+    <div class="grid" id="headLossGrid" style="display:none;">
+      <div class="metric"><div class="label">Perdita per attrito — Hazen-Williams</div><div class="value" id="hfResultHW">—</div></div>
+      <div class="metric"><div class="label">Perdita per attrito — Darcy-Weisbach</div><div class="value" id="hfResultDW">—</div></div>
+      <div class="metric"><div class="label">Dislivello geodetico</div><div class="value" id="elevResult">—</div></div>
+      <div class="metric"><div class="label">Prevalenza totale — Hazen-Williams</div><div class="value accent2" id="totalHeadHW">—</div></div>
+      <div class="metric"><div class="label">Prevalenza totale — Darcy-Weisbach</div><div class="value accent2" id="totalHeadDW">—</div></div>
+    </div>
+    <div class="status" id="headStatus"></div>
+  </div>
+
+  <!-- SEZIONE 5: TEMPO DI IRRIGAZIONE -->
+  <div class="panel">
+    <h2>5. Tempo di irrigazione</h2>
+    <div class="row">
+      <div>
+        <label>Fabbisogno netto (mm/giorno)</label>
+        <input type="number" step="0.1" id="netNeed">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="useEtcBtn" class="secondary small">Usa ETc calcolato al punto 1</button>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Area irrigata (m²)</label>
+        <input type="number" id="area" value="100">
+      </div>
+      <div>
+        <label>Efficienza sistema (%)</label>
+        <input type="number" id="eff" value="90">
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="runtimeBtn">Calcola minuti</button>
+      </div>
+    </div>
+    <div class="grid" id="runtimeGrid" style="display:none;">
+      <div class="metric"><div class="label">Volume idrico necessario</div><div class="value" id="volumeResult">—</div></div>
+      <div class="metric"><div class="label">Tempo di funzionamento</div><div class="value accent" id="runtimeResult">—</div></div>
+    </div>
+  </div>
+
+  <footer>Soglie del tensiometro prudenziali e orientative (sabbioso 15, franco 25, argilloso 35 cbar): verifica sempre la lettura sul campo. ET₀ di oggi da previsione Open-Meteo. ET₀: Open-Meteo (et0_fao_evapotranspiration). Kc: valori di riferimento FAO-56, indicativi — adattali alle condizioni locali. Perdite di carico: formula di Hazen-Williams per tubo in PE.</footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// Tabella Kc (FAO-56, valori di riferimento indicativi)
+// ini = fase iniziale, mid = fase intermedia (piena vegetazione/fioritura), end = fase finale
+// ---------------------------------------------------------------
+const COLTURE = {
+  "Pomodoro":            { ini: 0.6,  mid: 1.15, end: 0.80 },
+  "Peperone":             { ini: 0.6,  mid: 1.05, end: 0.90 },
+  "Melanzana":            { ini: 0.6,  mid: 1.05, end: 0.90 },
+  "Zucchina":             { ini: 0.5,  mid: 0.95, end: 0.75 },
+  "Cetriolo":             { ini: 0.6,  mid: 1.00, end: 0.75 },
+  "Lattuga":              { ini: 0.7,  mid: 1.00, end: 0.95 },
+  "Fragola":              { ini: 0.4,  mid: 0.85, end: 0.75 },
+  "Patata":               { ini: 0.5,  mid: 1.15, end: 0.75 },
+  "Basilico":             { ini: 0.5,  mid: 1.00, end: 0.90 },
+  "Vite da vino":         { ini: 0.3,  mid: 0.70, end: 0.45 },
+  "Vite da tavola":       { ini: 0.3,  mid: 0.85, end: 0.45 },
+  "Olivo":                { ini: 0.5,  mid: 0.65, end: 0.60 },
+  "Agrumi (con inerbimento)": { ini: 0.7, mid: 0.70, end: 0.70 },
+  "Pesco":                { ini: 0.55, mid: 0.90, end: 0.65 },
+  "Melo / Pero":          { ini: 0.6,  mid: 0.95, end: 0.75 },
+  "Actinidia (kiwi)":     { ini: 0.4,  mid: 1.05, end: 1.05 },
+  "Mandorlo":             { ini: 0.4,  mid: 0.90, end: 0.65 },
+  "Mais dolce":           { ini: 0.3,  mid: 1.15, end: 1.05 },
+  "Girasole":             { ini: 0.35, mid: 1.00, end: 0.35 }
+};
+
+const colturaSelect = document.getElementById('coltura');
+Object.keys(COLTURE).forEach(nome => {
+  const opt = document.createElement('option');
+  opt.value = nome;
+  opt.textContent = nome;
+  colturaSelect.appendChild(opt);
+});
+colturaSelect.value = "Pomodoro";
+
+function kcPerFase(coltura, fase) {
+  const c = COLTURE[coltura];
+  if (!c) return null;
+  switch (fase) {
+    case 'ini': return c.ini;
+    case 'mid': return c.mid;
+    case 'end': return (c.mid + c.end) / 2;
+    case 'dev': return (c.ini + c.mid) / 2;
+    default: return c.mid;
+  }
+}
+
+function aggiornaKc() {
+  const coltura = colturaSelect.value;
+  const fase = document.getElementById('fase').value;
+  const kc = kcPerFase(coltura, fase);
+  document.getElementById('kc').value = kc.toFixed(2);
+  const c = COLTURE[coltura];
+  document.getElementById('kcNote').textContent =
+    `Valori di riferimento per ${coltura}: Kc iniziale ${c.ini.toFixed(2)}, Kc intermedio ${c.mid.toFixed(2)}, Kc finale ${c.end.toFixed(2)}. ` +
+    `Il valore per la fase "sviluppo" e "finale" qui mostrati sono interpolazioni semplificate tra le fasi chiave: correggi manualmente il campo Kc se hai dati più precisi.`;
+}
+colturaSelect.addEventListener('change', aggiornaKc);
+document.getElementById('fase').addEventListener('change', aggiornaKc);
+aggiornaKc();
+
+// ---------------------------------------------------------------
+// Geocoding (Nominatim) — stesso pattern degli altri strumenti
+// ---------------------------------------------------------------
+document.getElementById('geoSearchBtn').addEventListener('click', geocodeSearch);
+document.getElementById('geoQuery').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); geocodeSearch(); }
+});
+
+async function geocodeSearch() {
+  const q = document.getElementById('geoQuery').value.trim();
+  const resultsDiv = document.getElementById('geoResults');
+  if (!q) return;
+  resultsDiv.innerHTML = '<div class="hint">Ricerca in corso…</div>';
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
+    const resp = await fetch(url, { headers: { 'Accept-Language': 'it' } });
+    if (!resp.ok) throw new Error('Errore rete');
+    const data = await resp.json();
+    if (!data.length) {
+      resultsDiv.innerHTML = '<div class="hint">Nessun risultato trovato.</div>';
+      return;
+    }
+    resultsDiv.innerHTML = '';
+    data.forEach(place => {
+      const div = document.createElement('div');
+      div.className = 'geo-item';
+      div.textContent = `📍 ${place.display_name} (${parseFloat(place.lat).toFixed(4)}, ${parseFloat(place.lon).toFixed(4)})`;
+      div.addEventListener('click', () => {
+        document.getElementById('lat').value = parseFloat(place.lat).toFixed(4);
+        document.getElementById('lon').value = parseFloat(place.lon).toFixed(4);
+        document.getElementById('geoLabel').textContent = `📍 ${place.display_name} (lat=${parseFloat(place.lat).toFixed(4)}, lon=${parseFloat(place.lon).toFixed(4)})`;
+        resultsDiv.innerHTML = '';
+      });
+      resultsDiv.appendChild(div);
+    });
+  } catch (err) {
+    resultsDiv.innerHTML = `<div class="hint">Errore durante la ricerca: ${err.message}</div>`;
+  }
+}
+
+// ---------------------------------------------------------------
+// SEZIONE 1: ET0 da Open-Meteo + calcolo ETc
+// ---------------------------------------------------------------
+document.getElementById('fetchEt0Btn').addEventListener('click', fetchET0);
+
+async function fetchET0() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const statusEl = document.getElementById('et0Status');
+  if (isNaN(lat) || isNaN(lon)) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Latitudine/longitudine non valide.';
+    return;
+  }
+  statusEl.className = 'status';
+  statusEl.textContent = 'Richiesta a Open-Meteo in corso…';
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=et0_fao_evapotranspiration&timezone=auto&forecast_days=1`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Errore rete Open-Meteo');
+    const data = await resp.json();
+    const et0 = data?.daily?.et0_fao_evapotranspiration?.[0];
+    if (et0 === undefined || et0 === null) throw new Error('Dato ET₀ non disponibile per questa località');
+    document.getElementById('et0').value = et0.toFixed(2);
+    statusEl.className = 'status ok';
+    statusEl.textContent = `ET₀ di oggi: ${et0.toFixed(2)} mm/giorno (fonte: Open-Meteo).`;
+  } catch (err) {
+    statusEl.className = 'status err';
+    statusEl.textContent = `Errore: ${err.message}`;
+  }
+}
+
+document.getElementById('calcEtcBtn').addEventListener('click', () => {
+  const et0 = parseFloat(document.getElementById('et0').value);
+  const kc = parseFloat(document.getElementById('kc').value);
+  if (isNaN(et0) || isNaN(kc)) {
+    alert('Inserisci ET₀ e Kc validi.');
+    return;
+  }
+  const etc = et0 * kc;
+  document.getElementById('etcResult').textContent = `${etc.toFixed(2)} mm/giorno`;
+  document.getElementById('etcGrid').style.display = 'grid';
+  window.__ultimoEtc = etc;
+});
+
+// ---------------------------------------------------------------
+// SEZIONE 2: stato idrico da tensiometro
+// ---------------------------------------------------------------
+document.getElementById('soilBtn').addEventListener('click', () => {
+  const cbar = parseFloat(document.getElementById('tensio').value);
+  const suolo = document.getElementById('soilType').value;
+  if (isNaN(cbar)) { alert('Inserisci una lettura del tensiometro valida.'); return; }
+
+  // Soglie PRUDENZIALI per tessitura (cbar): stessa tabella di ric-irrigazione-precisione
+  const soglie = {
+    sabbioso: { irriga: 15, stress: 40 },
+    franco:   { irriga: 25, stress: 60 },
+    argilloso:{ irriga: 35, stress: 80 }
+  };
+  const s = soglie[suolo];
+  let esito, classe;
+  if (cbar < 10) {
+    esito = '🟦 Suolo saturo / drenaggio in corso — evitare ulteriore irrigazione';
+    classe = 'warn';
+  } else if (cbar < s.irriga) {
+    esito = '🟢 Umidità ottimale — nessuna irrigazione necessaria';
+    classe = 'accent';
+  } else if (cbar < s.stress) {
+    esito = '🟡 Riserva in esaurimento — programmare irrigazione a breve';
+    classe = 'warn';
+  } else {
+    esito = '🔴 Stress idrico probabile — irrigare';
+    classe = 'bad';
+  }
+  const resEl = document.getElementById('soilResult');
+  resEl.textContent = esito;
+  resEl.className = 'value ' + classe;
+  document.getElementById('soilGrid').style.display = 'grid';
+});
+
+// ---------------------------------------------------------------
+// SEZIONE 3: portata totale
+// ---------------------------------------------------------------
+document.getElementById('flowBtn').addEventListener('click', () => {
+  const q = parseFloat(document.getElementById('qEmitter').value);
+  const n = parseFloat(document.getElementById('nEmitters').value);
+  if (isNaN(q) || isNaN(n)) { alert('Inserisci portata emettitore e numero emettitori validi.'); return; }
+  const totLh = q * n;
+  const totLs = totLh / 3600;
+  document.getElementById('flowResultLh').textContent = `${totLh.toFixed(1)} L/h`;
+  document.getElementById('flowResultLs').textContent = `${totLs.toFixed(4)} L/s`;
+  document.getElementById('flowGrid').style.display = 'grid';
+  document.getElementById('flowTotal').value = totLh.toFixed(1);
+});
+
+document.getElementById('useFlowBtn').addEventListener('click', () => {
+  const totLh = parseFloat(document.getElementById('flowResultLh').textContent);
+  if (isNaN(totLh)) { alert('Calcola prima la portata totale al punto 3.'); return; }
+  document.getElementById('flowTotal').value = totLh.toFixed(1);
+});
+
+// ---------------------------------------------------------------
+// SEZIONE 4: perdite di carico (Hazen-Williams) + dislivello
+// ---------------------------------------------------------------
+function hazenWilliamsHf(L, Q, D, C) {
+  // SI: hf = 10.67 * L * Q^1.852 / (C^1.852 * D^4.8704), Q in m³/s, D in m
+  return 10.67 * L * Math.pow(Q, 1.852) / (Math.pow(C, 1.852) * Math.pow(D, 4.8704));
+}
+
+function darcyWeisbachHf(L, Q, D, epsilonM) {
+  // Q in m³/s, D in m, epsilonM = scabrezza assoluta in m
+  const g = 9.81;
+  const nu = 1.004e-6; // viscosità cinematica acqua a 20°C, m²/s
+  const A = Math.PI * D * D / 4;
+  const v = Q / A; // m/s
+  const Re = (v * D) / nu;
+
+  let f;
+  if (Re < 2300) {
+    // regime laminare
+    f = Re > 0 ? 64 / Re : 0;
+  } else {
+    // Swamee-Jain (approssimazione esplicita di Colebrook-White), valida per moto turbolento
+    const relRough = epsilonM / D;
+    const denom = Math.log10((relRough / 3.7) + (5.74 / Math.pow(Re, 0.9)));
+    f = 0.25 / (denom * denom);
+  }
+  const hf = f * (L / D) * (v * v) / (2 * g);
+  return { hf, v, Re, f };
+}
+
+document.getElementById('headLossBtn').addEventListener('click', () => {
+  const L = parseFloat(document.getElementById('length').value);
+  const Dmm = parseFloat(document.getElementById('diameter').value);
+  const Qlh = parseFloat(document.getElementById('flowTotal').value);
+  const slope = parseFloat(document.getElementById('slope').value);
+  const C = parseFloat(document.getElementById('cHW').value);
+  const epsMm = parseFloat(document.getElementById('roughness').value);
+  const statusEl = document.getElementById('headStatus');
+
+  if ([L, Dmm, Qlh, slope, C, epsMm].some(v => isNaN(v)) || L <= 0 || Dmm <= 0 || Qlh < 0 || C <= 0 || epsMm < 0) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Controlla i valori inseriti (lunghezza, diametro, portata e coefficiente devono essere positivi).';
+    return;
+  }
+
+  const D = Dmm / 1000;          // m
+  const Q = Qlh / 3600 / 1000;   // m³/s
+  const epsilonM = epsMm / 1000; // m
+
+  const hfHW = hazenWilliamsHf(L, Q, D, C);
+  const dw = darcyWeisbachHf(L, Q, D, epsilonM);
+  const elevazione = (slope / 100) * L; // m, positivo = salita
+
+  const totaleHW = hfHW + elevazione;
+  const totaleDW = dw.hf + elevazione;
+
+  document.getElementById('hfResultHW').textContent = `${hfHW.toFixed(3)} m`;
+  document.getElementById('hfResultDW').textContent = `${dw.hf.toFixed(3)} m`;
+  document.getElementById('elevResult').textContent = `${elevazione >= 0 ? '+' : ''}${elevazione.toFixed(2)} m`;
+  document.getElementById('totalHeadHW').textContent = `${totaleHW.toFixed(2)} m (${(totaleHW/10.19).toFixed(2)} bar)`;
+  document.getElementById('totalHeadDW').textContent = `${totaleDW.toFixed(2)} m (${(totaleDW/10.19).toFixed(2)} bar)`;
+  document.getElementById('headLossGrid').style.display = 'grid';
+
+  statusEl.className = dw.Re < 2300 ? 'status warn' : 'status ok';
+  statusEl.textContent = dw.Re < 2300
+    ? `Regime laminare (Re=${dw.Re.toFixed(0)}) — velocità molto bassa, verifica la portata inserita. Aggiungi la pressione di esercizio degli emettitori (in genere 1–1.5 bar) alla prevalenza totale per dimensionare la pompa.`
+    : `Regime turbolento (Re=${dw.Re.toFixed(0)}, v=${dw.v.toFixed(2)} m/s). Aggiungi la pressione di esercizio degli emettitori (in genere 1–1.5 bar) alla prevalenza totale per dimensionare la pompa.`;
+});
+
+// ---------------------------------------------------------------
+// SEZIONE 5: tempo di irrigazione
+// ---------------------------------------------------------------
+document.getElementById('useEtcBtn').addEventListener('click', () => {
+  if (window.__ultimoEtc === undefined) { alert('Calcola prima ETc al punto 1.'); return; }
+  document.getElementById('netNeed').value = window.__ultimoEtc.toFixed(2);
+});
+
+document.getElementById('runtimeBtn').addEventListener('click', () => {
+  const netNeed = parseFloat(document.getElementById('netNeed').value); // mm/giorno
+  const area = parseFloat(document.getElementById('area').value);       // m²
+  const eff = parseFloat(document.getElementById('eff').value);         // %
+  const flowLh = parseFloat(document.getElementById('flowTotal').value) || parseFloat(document.getElementById('flowResultLh').textContent);
+
+  if ([netNeed, area, eff].some(v => isNaN(v)) || eff <= 0) {
+    alert('Inserisci fabbisogno netto, area ed efficienza validi.');
+    return;
+  }
+  if (isNaN(flowLh)) {
+    alert('Calcola prima la portata totale al punto 3 (o compilala manualmente al punto 4).');
+    return;
+  }
+
+  // 1 mm su 1 m² = 1 litro
+  const volumeLordo = (netNeed * area) / (eff / 100); // litri
+  const minuti = (volumeLordo / flowLh) * 60;
+
+  document.getElementById('volumeResult').textContent = `${volumeLordo.toFixed(0)} L`;
+  document.getElementById('runtimeResult').textContent =
+    minuti < 60 ? `${minuti.toFixed(0)} min` : `${(minuti/60).toFixed(2)} h (${minuti.toFixed(0)} min)`;
+  document.getElementById('runtimeGrid').style.display = 'grid';
+});
+</script>
+<script data-goatcounter="https://ric-agro.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

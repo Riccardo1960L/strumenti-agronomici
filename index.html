@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strumenti agronomici — radiazione solare e serre</title>
+<title>Strumenti agronomici — radiazione solare, serre e irrigazione</title>
 <style>
   :root{
     --bg:#0d0f10; --panel:#15181a; --border:#2a2f33; --text:#d7dbde;
@@ -27,6 +27,8 @@
   .btn{display:inline-block; padding:8px 14px; border:1px solid var(--accent); border-radius:5px; color:var(--accent); background:#1c2b22; text-decoration:none; font-size:0.9em;}
   .btn:hover{background:#24382c;}
   .note{border-left:3px solid var(--warn); padding:6px 12px; color:var(--dim); font-size:0.85em; margin:14px 0;}
+  .avv{border:1px solid var(--warn); border-left:4px solid var(--warn); border-radius:6px; background:#1a1710; padding:12px 16px; margin:0 0 16px 0; font-size:0.85em; line-height:1.55;}
+  .avv b.t{color:var(--warn);}
   ul{margin:0 0 10px 0; padding-left:20px; font-size:0.88em;}
   li{margin-bottom:4px;}
   a{color:var(--accent2);}
@@ -37,13 +39,13 @@
 <div class="wrap">
 
   <h1>🌱 Strumenti agronomici</h1>
-  <div class="sub">Radiazione solare, fotosintesi e serre — calcolatori che girano nel browser</div>
+  <div class="sub">Radiazione solare, serre e irrigazione — calcolatori che girano nel browser</div>
 
   <p>Piccoli strumenti nati da script Python per l'analisi agronomica, riscritti come pagine web autonome: si aprono nel browser, senza installare nulla e senza registrazione. I dati che servono (posizione, meteo) vengono richiesti a servizi pubblici al momento del calcolo; nessun dato viene salvato da questo sito.</p>
 
   <div class="note">Sono strumenti sperimentali. Usano modelli semplificati e parametri indicativi: servono a confrontare scenari e a farsi un'idea degli ordini di grandezza, non a prendere decisioni professionali al posto di un tecnico.</div>
 
-  <h2>Gli strumenti</h2>
+  <h2>Radiazione solare e serre</h2>
 
   <div class="card">
     <h3>☀ ric-sole — radiazione solare e accrescimento</h3>
@@ -87,9 +89,58 @@
     <a class="btn" href="ric-serra-materiali.html">Apri ric-serra-materiali →</a>
   </div>
 
+  <h2>Irrigazione e fabbisogno idrico</h2>
+
+  <div class="avv">
+    <b class="t">⚠ Avvertenze d'uso</b><br>
+    <i>Piede in campo, testa sui libri, occhi sul monitor.</i> Guardare la coltura e toccare il terreno; interpretare i risultati con la teoria agronomica; usare dati, sensori e immagini come informazione in più, non come certezza. Un errore di irrigazione, in difetto o in eccesso, può compromettere mesi di lavoro e costare moltissimo: <b>le decisioni e le responsabilità restano all'utilizzatore.</b>
+  </div>
+
+  <div class="card">
+    <h3>💧 ric-irrigazione — piano di irrigazione</h3>
+    <p>Dal clima di un giorno tipo, dal suolo e dalla pianta ricava ogni quanti giorni irrigare e quanta acqua dare.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Consumo giornaliero della pianta, acqua utile nella zona radicale, riserva da non superare prima dello stress, frequenza consigliata (giorni) e volume lordo per irrigazione (L/m²). Colture: ortaggio, prato, frutteto, olivo, vite, succulente.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Evapotraspirazione di riferimento stimata da temperatura, umidità e vento; coefficiente colturale per tipo di pianta; acqua utile per classe di suolo; deficit massimo ammesso 50%; efficienza di distribuzione per suolo. Calcolo locale, nessun dato inviato.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">ET0 con formula semplificata, non FAO-56: ordine di grandezza. Non considera la pioggia, lo stadio della coltura né l'andamento dei giorni precedenti.</dd>
+    </dl>
+    <a class="btn" href="ric-irrigazione.html">Apri ric-irrigazione →</a>
+  </div>
+
+  <div class="card">
+    <h3>📟 ric-irrigazione-precisione — irrigazione con tensiometri</h3>
+    <p>Come ric-irrigazione, ma corregge la decisione con le letture di due tensiometri (superficiale e profondo).</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Consumo teorico, volume standard e decisione del sistema: stop se il suolo è saturo, irrigazione completa urgente, ridotta, da verificare sul campo, oppure attesa. Indica priorità e litri/m² da erogare.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Stessa base di ric-irrigazione; soglie di irrigazione prudenziali per tessitura (sabbioso 15, franco 25, argilloso 35 cbar); volume pari al ripristino del 50% della riserva utile.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Soglie orientative: un tensiometro mal installato o rimasto all'aria dà valori falsi, quindi verificare sempre la lettura sul campo. Il volume non misura l'esaurimento reale della riserva.</dd>
+    </dl>
+    <a class="btn" href="ric-irrigazione-precisione.html">Apri ric-irrigazione-precisione →</a>
+  </div>
+
+  <div class="card">
+    <h3>🚿 ric-microirrigazione — progetto di un impianto a goccia</h3>
+    <p>Dal fabbisogno della coltura al tempo di funzionamento dell'impianto, passando per portate e perdite di carico.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>ET0 del giorno da Open-Meteo e fabbisogno (ETc) con Kc per 19 colture e per fase; stato idrico da tensiometro; portata totale degli emettitori; perdite di carico e prevalenza della linea; volume e tempo di irrigazione.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Kc di riferimento FAO-56 per fase; ET0 FAO Penman-Monteith dalla previsione Open-Meteo; perdite di carico con Hazen-Williams e Darcy-Weisbach (Swamee-Jain); ricerca del luogo con Nominatim.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Kc indicativi da adattare alle condizioni locali; ET0 del solo giorno corrente. Va aggiunta la pressione di esercizio degli emettitori (1–1,5 bar) per dimensionare la pompa; non valuta l'uniformità di distribuzione.</dd>
+    </dl>
+    <a class="btn" href="ric-microirrigazione.html">Apri ric-microirrigazione →</a>
+  </div>
+
   <h2>In preparazione</h2>
   <ul>
-    <li>Irrigazione e fabbisogno idrico delle colture</li>
+    <li>Bilancio idrico avanzato con suolo, piogge recenti e condizioni dell'ultima settimana</li>
     <li>Maturazione della vite e indici bioclimatici</li>
     <li>Database delle piante</li>
   </ul>

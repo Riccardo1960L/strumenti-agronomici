@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-irrigazione-precisione — Sistema Irrigazione di Precisione</title>
+<style>
+  :root {
+    --bg: #0d0f0d;
+    --panel: #141714;
+    --border: #2a2f2a;
+    --text: #d7e0d7;
+    --muted: #7f8c7f;
+    --accent: #5fd97a;
+    --accent-dim: #3a8c4a;
+    --warn: #e0c15a;
+    --err: #e06a5a;
+    --crit: #ff7a5c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 1.25rem;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .panel h2 {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input, select {
+    width: 100%;
+    background: #0a0c0a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border-radius: 4px;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-dim);
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin-bottom: 0; color: var(--text); font-size: 0.85rem; }
+
+  .tensiometri-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tensiometri-fields.disabled { opacity: 0.4; pointer-events: none; }
+
+  button {
+    margin-top: 8px;
+    width: 100%;
+    background: var(--accent-dim);
+    color: #eafff0;
+    border: none;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+  button:hover { background: var(--accent); color: #0a0c0a; }
+
+  #report { display: none; }
+  .report-header {
+    color: var(--accent);
+    font-size: 1rem;
+    text-align: center;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+  .report-sub {
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  hr {
+    border: none;
+    border-top: 1px dashed var(--border);
+    margin: 12px 0;
+  }
+  .decisione-box {
+    background: #0a0c0a;
+    border-left: 4px solid var(--muted);
+    border-radius: 4px;
+    padding: 14px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+  }
+  .decisione-box.normale { border-left-color: var(--accent-dim); }
+  .decisione-box.media { border-left-color: var(--warn); }
+  .decisione-box.critica { border-left-color: var(--crit); }
+  .decisione-box.bloccata { border-left-color: #6ab7e0; }
+  .decisione-box.ok { border-left-color: var(--accent); }
+
+  .priorita-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #0a0c0a;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .result-box {
+    background: #0a0c0a;
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    padding: 14px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .result-box .big {
+    color: var(--accent);
+    font-size: 1.1rem;
+  }
+  .line { font-size: 0.88rem; margin: 5px 0; color: var(--muted); }
+  .line b { color: var(--text); }
+
+  footer {
+    margin-top: 30px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .avvertenze {
+    background: #1a1710;
+    border: 1px solid var(--warn);
+    border-left: 4px solid var(--warn);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0 0 20px 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+  .avvertenze .av-titolo { color: var(--warn); font-weight: bold; margin-bottom: 6px; }
+  .avvertenze .av-motto { font-style: italic; margin-bottom: 8px; }
+  .avvertenze ul { margin: 0 0 8px 0; padding-left: 18px; }
+  .avvertenze li { margin-bottom: 4px; }
+  .avvertenze .av-fine { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<h1>ric-irrigazione-precisione</h1>
+<div class="subtitle">Sistema Irrigazione di Precisione — con feedback tensiometri</div>
+
+<div class="avvertenze">
+  <div class="av-titolo">⚠ Avvertenze d'uso</div>
+  <div class="av-motto">Piede in campo, testa sui libri, occhi sul monitor.</div>
+  <ul>
+    <li><b>Piede in campo:</b> guardare la coltura e toccare il terreno. Foglie, turgore, colore, umidità reale a varie profondità. Nessun calcolo sostituisce l'osservazione diretta.</li>
+    <li><b>Testa sui libri:</b> i risultati sono stime basate su modelli semplificati (coefficienti colturali, capacità idrica del suolo, ET0). Vanno interpretati con la teoria agronomica, non applicati alla lettera.</li>
+    <li><b>Occhi sul monitor:</b> dati meteo, sensori, tensiometri, immagini da drone o da satellite aiutano a vedere ciò che a occhio non si vede, ma sono un'informazione in più, non una certezza.</li>
+  </ul>
+  <div class="av-fine">Un errore di irrigazione, in difetto o in eccesso, può compromettere mesi di lavoro e comportare costi molto elevati. Questo strumento è didattico e orientativo: <b>le decisioni e le responsabilità restano all'utilizzatore.</b></div>
+</div>
+
+
+<div class="panel">
+  <h2>Condizioni climatiche e coltura</h2>
+  <div class="grid">
+    <div class="field">
+      <label for="temp_max">Temp. massima (°C)</label>
+      <input type="number" id="temp_max" value="33" step="0.1">
+    </div>
+    <div class="field">
+      <label for="temp_min">Temp. minima (°C)</label>
+      <input type="number" id="temp_min" value="20" step="0.1">
+    </div>
+    <div class="field">
+      <label for="umidita">Umidità relativa (%)</label>
+      <input type="number" id="umidita" value="40" step="1">
+    </div>
+    <div class="field">
+      <label for="vento">Vento (km/h)</label>
+      <input type="number" id="vento" value="15" step="1">
+    </div>
+    <div class="field">
+      <label for="tipo_suolo">Tipo di suolo</label>
+      <select id="tipo_suolo">
+        <option value="sabbioso">Sabbioso</option>
+        <option value="limoso">Limoso</option>
+        <option value="argilloso">Argilloso</option>
+        <option value="medio impasto" selected>Medio impasto</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="tipo_pianta">Tipo di pianta</label>
+      <select id="tipo_pianta">
+        <option value="ortaggio" selected>Ortaggio</option>
+        <option value="prato">Prato</option>
+        <option value="frutteto">Frutteto</option>
+        <option value="ulivo">Ulivo</option>
+        <option value="succulente">Succulenta</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="profondita_radici">Profondità radici (cm)</label>
+      <input type="number" id="profondita_radici" value="30" step="1">
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Dati tensiometri (opzionali)</h2>
+  <div class="checkbox-row">
+    <input type="checkbox" id="usa_tensiometri" checked onchange="toggleTensiometri()">
+    <label for="usa_tensiometri">Ho i dati dei tensiometri</label>
+  </div>
+  <div class="tensiometri-fields" id="tensiometri-fields">
+    <div class="field">
+      <label for="tens_sup">Tensiometro superficiale (cb)</label>
+      <input type="number" id="tens_sup" value="50" step="1">
+    </div>
+    <div class="field">
+      <label for="tens_prof">Tensiometro profondo (cb)</label>
+      <input type="number" id="tens_prof" value="20" step="1">
+    </div>
+  </div>
+</div>
+
+<button onclick="elaboraDiagnostica()">Elabora diagnostica</button>
+
+<div class="panel" id="report">
+  <div class="report-header">MONITORAGGIO AUTOMATIZZATO IRRIGAZIONE</div>
+  <div class="report-sub" id="rep-sub"></div>
+
+  <div class="line" id="rep-consumo"></div>
+
+  <div class="decisione-box" id="rep-decisione-box">
+    <div id="rep-decisione"></div>
+  </div>
+
+  <div class="result-box">
+    <div class="big" id="rep-volume"></div>
+  </div>
+</div>
+
+<footer>ric-irrigazione-precisione · calcolo locale, nessun dato inviato in rete<br>
+Limiti del modello: ET0 stimata con formula semplificata; il volume proposto ripristina il 50% della riserva utile e non misura il reale esaurimento.<br>
+Le soglie dei tensiometri sono prudenziali (valori orientativi): verifica sempre la lettura sul campo, un sensore mal installato o rimasto all'aria dà valori falsi.</footer>
+
+<script>
+// --- Dati di riferimento (identici allo script Python originale) ---
+const KC_PIANTE = {
+  ortaggio: 0.85,
+  prato: 0.75,
+  frutteto: 0.70,
+  ulivo: 0.55,
+  succulente: 0.20
+};
+
+// Soglie di irrigazione (cb) PRUDENZIALI, identiche a ric-microirrigazione:
+// sabbioso 15, franco/medio impasto 25, argilloso 35. "Limoso" usa la soglia del franco.
+const SUOLI = {
+  sabbioso:        { awc_mm_m: 70,  efficienza: 0.70, soglia_irrigazione_cb: 15 },
+  limoso:          { awc_mm_m: 160, efficienza: 0.85, soglia_irrigazione_cb: 25 },
+  argilloso:       { awc_mm_m: 190, efficienza: 0.80, soglia_irrigazione_cb: 35 },
+  "medio impasto": { awc_mm_m: 140, efficienza: 0.90, soglia_irrigazione_cb: 25 }
+};
+const SOGLIA_SATURO_CB = 10; // sotto questo valore: suolo saturo
+
+function calcolaEt0(tempMedia, umidita, vento) {
+  let et0 = 0.12 * tempMedia;
+  if (umidita < 40) et0 *= 1.3;
+  else if (umidita > 70) et0 *= 0.8;
+  if (vento > 20) et0 *= 1.2;
+  return Math.max(0.5, et0);
+}
+
+function elaboraDiagnosticaCalc(input, tensSup, tensProf) {
+  const tempMedia = (input.temp_max + input.temp_min) / 2;
+  const profonditaRadiciM = input.profondita_radici_cm / 100.0;
+
+  // 1. Calcoli teorici climatici
+  const et0 = calcolaEt0(tempMedia, input.umidita, input.vento);
+  const kc = KC_PIANTE[input.tipo_pianta] ?? 0.65;
+  const etcGiornaliera = et0 * kc;
+
+  const datiSuolo = SUOLI[input.tipo_suolo] ?? { awc_mm_m: 120, efficienza: 0.80, soglia_irrigazione_cb: 45 };
+  const sogliaCritica = datiSuolo.soglia_irrigazione_cb;
+
+  // Volume standard teorico (ripristino del 50% della riserva utile)
+  const acquaUtileTotaleMm = datiSuolo.awc_mm_m * profonditaRadiciM;
+  const acquaFacileMm = acquaUtileTotaleMm * 0.50;
+  const volumeStandardLordoLMq = Math.round((acquaFacileMm / datiSuolo.efficienza) * 10) / 10;
+
+  // 2. Logica di feedback con i tensiometri
+  let statoAzione = "Esegui irrigazione standard secondo pianificazione.";
+  let volumeEffettivoLMq = volumeStandardLordoLMq;
+  let priorita = "Normale";
+  let classe = "normale";
+
+  if (tensSup !== null && tensProf !== null) {
+    const supSecco = tensSup >= sogliaCritica;
+    const profSecco = tensProf >= sogliaCritica;
+    if (tensSup < SOGLIA_SATURO_CB) {
+      statoAzione = "STOP - Terreno saturo in superficie. Rischio asfissia radicale.";
+      volumeEffettivoLMq = 0.0;
+      priorita = "BLOCCATA";
+      classe = "bloccata";
+    } else if (supSecco && profSecco) {
+      statoAzione = "IRRIGAZIONE COMPLETA URGENTE - Il terreno è secco a tutte le profondità. Ripristina interamente la riserva.";
+      volumeEffettivoLMq = volumeStandardLordoLMq;
+      priorita = "CRITICA";
+      classe = "critica";
+    } else if (supSecco && !profSecco) {
+      statoAzione = "IRRIGAZIONE RIDOTTA - Lo strato superficiale è secco, ma le radici profonde hanno acqua. Riduci il volume del 40%.";
+      volumeEffettivoLMq = Math.round(volumeStandardLordoLMq * 0.6 * 10) / 10;
+      priorita = "Media";
+      classe = "media";
+    } else if (!supSecco && profSecco) {
+      statoAzione = "VERIFICA SUL CAMPO - Superficie umida ma strato profondo secco. Può essere una pioggia o un'irrigazione recente solo superficiale, oppure un sensore da controllare. Controlla la coltura e scava per verificare; se confermato, irrigazione lenta e profonda con volume ridotto del 40%.";
+      volumeEffettivoLMq = Math.round(volumeStandardLordoLMq * 0.6 * 10) / 10;
+      priorita = "Media (da verificare)";
+      classe = "media";
+    } else {
+      statoAzione = "ATTENDI - I sensori indicano che l'umidità attuale è ottimale per le radici.";
+      volumeEffettivoLMq = 0.0;
+      priorita = "Nessuna (Terreno OK)";
+      classe = "ok";
+    }
+  } else {
+    statoAzione = "Mancano i dati dei tensiometri. Affidamento esclusivo al calcolo climatico teorico.";
+  }
+
+  return {
+    consumoTeoricoGiornalieroLMq: Math.round(etcGiornaliera * 100) / 100,
+    volumeTeoricoStandardLMq: volumeStandardLordoLMq,
+    decisioneSistema: statoAzione,
+    volumeDaErogareEffettivoLMq: volumeEffettivoLMq,
+    priorita: priorita,
+    classe: classe,
+    sogliaCritica: sogliaCritica
+  };
+}
+
+function toggleTensiometri() {
+  const usa = document.getElementById('usa_tensiometri').checked;
+  document.getElementById('tensiometri-fields').classList.toggle('disabled', !usa);
+}
+
+function elaboraDiagnostica() {
+  const input = {
+    temp_max: parseFloat(document.getElementById('temp_max').value),
+    temp_min: parseFloat(document.getElementById('temp_min').value),
+    umidita: parseFloat(document.getElementById('umidita').value),
+    vento: parseFloat(document.getElementById('vento').value),
+    tipo_suolo: document.getElementById('tipo_suolo').value,
+    tipo_pianta: document.getElementById('tipo_pianta').value,
+    profondita_radici_cm: parseFloat(document.getElementById('profondita_radici').value)
+  };
+
+  const usaTensiometri = document.getElementById('usa_tensiometri').checked;
+  const tensSup = usaTensiometri ? parseFloat(document.getElementById('tens_sup').value) : null;
+  const tensProf = usaTensiometri ? parseFloat(document.getElementById('tens_prof').value) : null;
+
+  const r = elaboraDiagnosticaCalc(input, tensSup, tensProf);
+
+  document.getElementById('rep-sub').textContent =
+    `Suolo: ${input.tipo_suolo} (soglia di irrigazione prudenziale: ${r.sogliaCritica} cb) · Pianta: ${input.tipo_pianta} · Radici: ${input.profondita_radici_cm} cm`;
+
+  document.getElementById('rep-consumo').innerHTML =
+    `Consumo teorico stimato: <b>${r.consumoTeoricoGiornalieroLMq} L/m²/giorno</b> · Volume standard teorico: <b>${r.volumeTeoricoStandardLMq} L/m²</b>`;
+
+  const box = document.getElementById('rep-decisione-box');
+  box.className = 'decisione-box ' + r.classe;
+  document.getElementById('rep-decisione').innerHTML =
+    `${r.decisioneSistema}<span class="priorita-tag">Priorità: ${r.priorita}</span>`;
+
+  document.getElementById('rep-volume').textContent =
+    `Quantità da erogare: ${r.volumeDaErogareEffettivoLMq} Litri/m²`;
+
+  document.getElementById('report').style.display = 'block';
+}
+
+window.addEventListener('DOMContentLoaded', elaboraDiagnostica);
+</script>
+
+<script data-goatcounter="https://ric-agro.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
