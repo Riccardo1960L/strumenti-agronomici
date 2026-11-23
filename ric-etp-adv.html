@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ric-etp-adv — Bilancio idrico del suolo (v2)</title>
+<style>
+  :root {
+    --bg: #0d0f0d;
+    --panel: #141714;
+    --border: #2a2f2a;
+    --text: #d7e0d7;
+    --muted: #7f8c7f;
+    --accent: #5fd97a;
+    --accent-dim: #3a8c4a;
+    --warn: #e0c15a;
+    --err: #e06a5a;
+    --blue: #6ab7e0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 1.25rem;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+  }
+  h2 {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%;
+    background: #0a0c0a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border-radius: 4px;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-dim); }
+  .hint { color: var(--muted); font-size: 0.75rem; margin-top: 3px; }
+  button {
+    margin-top: 18px;
+    width: 100%;
+    background: var(--accent-dim);
+    color: #eafff0;
+    border: none;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+  button:hover { background: var(--accent); color: #0a0c0a; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #status { color: var(--muted); font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
+  #status.err { color: var(--err); }
+
+  #report { display: none; }
+  .stato-box {
+    background: #0a0c0a;
+    border-left: 4px solid var(--muted);
+    border-radius: 4px;
+    padding: 14px;
+    margin: 0 0 14px 0;
+    font-size: 0.92rem;
+  }
+  .stato-box.ok { border-left-color: var(--accent); }
+  .stato-box.attenzione { border-left-color: var(--warn); }
+  .stato-box.irrigare { border-left-color: #ff7a5c; }
+  .stato-box .titolo { font-size: 1.05rem; margin-bottom: 4px; }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 0.86rem; margin: 10px 0; }
+  @media (max-width: 560px) { .kv { grid-template-columns: 1fr; } }
+  .kv div span { color: var(--muted); }
+  .kv div b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 6px; }
+  th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: normal; }
+  .scroll { overflow-x: auto; }
+  .nota { color: var(--warn); font-size: 0.8rem; margin-top: 10px; }
+  .line { font-size: 0.86rem; margin: 5px 0; color: var(--muted); }
+  .line b { color: var(--text); }
+  svg.grafico { width: 100%; height: auto; display: block; margin-top: 6px; }
+  details { font-size: 0.82rem; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--text); margin-bottom: 8px; }
+  details p, details li { margin: 4px 0; }
+  details ul { padding-left: 18px; margin: 4px 0; }
+  footer { margin-top: 30px; color: var(--muted); font-size: 0.75rem; text-align: center; }
+
+  .avvertenze {
+    background: #1a1710;
+    border: 1px solid var(--warn);
+    border-left: 4px solid var(--warn);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0 0 20px 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+  .avvertenze .av-titolo { color: var(--warn); font-weight: bold; margin-bottom: 6px; }
+  .avvertenze .av-motto { font-style: italic; margin-bottom: 8px; }
+  .avvertenze ul { margin: 0 0 8px 0; padding-left: 18px; }
+  .avvertenze li { margin-bottom: 4px; }
+  .avvertenze .av-fine { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<h1>ric-etp-adv</h1>
+<div class="subtitle">Bilancio idrico del suolo (v2) — piogge degli ultimi mesi, tipo di suolo, ultima settimana e previsione a 7 giorni</div>
+
+<div class="avvertenze">
+  <div class="av-titolo">⚠ Avvertenze d'uso</div>
+  <div class="av-motto">Piede in campo, testa sui libri, occhi sul monitor.</div>
+  <ul>
+    <li><b>Piede in campo:</b> guardare la coltura e toccare il terreno. Foglie, turgore, colore, umidità reale a varie profondità. Nessun calcolo sostituisce l'osservazione diretta.</li>
+    <li><b>Testa sui libri:</b> i risultati sono stime basate su modelli semplificati (coefficienti colturali, capacità idrica del suolo, ET0). Vanno interpretati con la teoria agronomica, non applicati alla lettera.</li>
+    <li><b>Occhi sul monitor:</b> dati meteo, sensori, tensiometri, immagini da drone o da satellite aiutano a vedere ciò che a occhio non si vede, ma sono un'informazione in più, non una certezza.</li>
+  </ul>
+  <div class="av-fine">Un errore di irrigazione, in difetto o in eccesso, può compromettere mesi di lavoro e comportare costi molto elevati. Questo strumento è didattico e orientativo: <b>le decisioni e le responsabilità restano all'utilizzatore.</b></div>
+</div>
+
+<div class="panel">
+  <h2>Dove, cosa, su che suolo</h2>
+  <div class="grid">
+    <div>
+      <label for="localita">Località</label>
+      <input type="text" id="localita" list="localita-list" value="lavagna" autocomplete="off">
+      <datalist id="localita-list"></datalist>
+    </div>
+    <div>
+      <label for="coltura">Coltura</label>
+      <select id="coltura"></select>
+    </div>
+    <div>
+      <label for="fase">Fase colturale (applicata a tutto il periodo)</label>
+      <select id="fase">
+        <option value="ini">Iniziale</option>
+        <option value="mid" selected>Medio</option>
+        <option value="end">Finale</option>
+      </select>
+    </div>
+    <div>
+      <label for="suolo">Tipo di suolo</label>
+      <select id="suolo">
+        <option value="sabbioso">Sabbioso (70 mm/m)</option>
+        <option value="medio impasto" selected>Medio impasto / franco (140 mm/m)</option>
+        <option value="limoso">Limoso (160 mm/m)</option>
+        <option value="argilloso">Argilloso (190 mm/m)</option>
+      </select>
+    </div>
+    <div>
+      <label for="radici">Profondità utile del suolo esplorata dalle radici (cm)</label>
+      <input type="number" id="radici" min="10" max="300" step="5">
+      <div class="hint" id="radici-hint"></div>
+    </div>
+    <div>
+      <label for="kc_custom">Kc personalizzato (facoltativo)</label>
+      <input type="number" id="kc_custom" min="0.1" max="1.5" step="0.01" placeholder="vuoto = valore della tabella">
+    </div>
+    <div>
+      <label for="impianto">Sistema di irrigazione</label>
+      <select id="impianto">
+        <option value="0.90" selected>Goccia / ala gocciolante (efficienza 0,90)</option>
+        <option value="0.80">Microirrigazione a spruzzo (0,80)</option>
+        <option value="0.75">Aspersione (0,75)</option>
+        <option value="0.60">Scorrimento / manichetta (0,60)</option>
+      </select>
+    </div>
+    <div>
+      <label for="periodo">Periodo di piogge considerato</label>
+      <select id="periodo">
+        <option value="60">Ultimi 60 giorni</option>
+        <option value="90" selected>Ultimi 90 giorni</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Cosa sai già (riduce l'incertezza)</h2>
+  <div class="grid">
+    <div class="full">
+      <label for="irrigazioni">Irrigazioni già fatte o pianificate (una per riga: data, mm)</label>
+      <textarea id="irrigazioni" placeholder="2026-08-14, 20&#10;2026-08-28, 18"></textarea>
+      <div class="hint">Formato AAAA-MM-GG, mm (1 mm = 1 L/m²), acqua che arriva al suolo. Se non lo indichi, il modello suppone che non sia mai stato irrigato.</div>
+    </div>
+    <div>
+      <label for="stato_iniz">Stato del suolo all'inizio del periodo</label>
+      <select id="stato_iniz">
+        <option value="0">A capacità di campo (0% esaurito)</option>
+        <option value="0.5">Metà riserva esaurita (50%)</option>
+        <option value="0.8">Molto asciutto (80% esaurito)</option>
+      </select>
+    </div>
+    <div>
+      <label for="oss">Riserva utile esaurita osservata stamattina (%) — facoltativo</label>
+      <input type="number" id="oss" min="0" max="100" step="1" placeholder="vuoto = usa il modello">
+      <div class="hint">Da scavo, sensore o tensiometro. Se la inserisci, la previsione parte da questo valore.</div>
+    </div>
+  </div>
+  <button id="btn-calcola" onclick="calcola()">Calcola il bilancio idrico</button>
+  <div id="status"></div>
+</div>
+
+<div class="panel" id="report">
+  <h2 id="rep-titolo"></h2>
+
+  <div class="stato-box" id="rep-stato"></div>
+  <div class="kv" id="rep-kv"></div>
+  <div class="line" id="rep-incertezza"></div>
+
+  <h2 style="margin-top:20px">Andamento dell'esaurimento del suolo</h2>
+  <div id="rep-grafico"></div>
+
+  <h2 style="margin-top:20px">Previsione dei prossimi 7 giorni (senza nuove irrigazioni, salvo quelle indicate)</h2>
+  <div class="scroll" id="rep-prev"></div>
+  <div class="line" id="rep-soglia"></div>
+
+  <h2 style="margin-top:20px">Piogge degli ultimi mesi</h2>
+  <div class="line" id="rep-piogge"></div>
+
+  <h2 style="margin-top:20px">Ultima settimana a confronto con le tre settimane precedenti</h2>
+  <div class="scroll" id="rep-settimana"></div>
+  <div class="line" id="rep-sett-commento"></div>
+
+  <div class="nota" id="rep-avvisi"></div>
+</div>
+
+<div class="panel">
+  <details>
+    <summary>Metodo e limiti (da leggere)</summary>
+    <p><b>Metodo.</b> Bilancio idrico giornaliero del suolo secondo FAO-56: l'esaurimento della riserva utile (Dr) di ieri diminuisce con pioggia efficace e irrigazione, aumenta con l'evapotraspirazione della coltura (ETc = Ks × Kc × ET0). Se l'esaurimento supera la quota facilmente utilizzabile (RAW) la coltura entra in stress e consuma meno (Ks &lt; 1). L'acqua oltre la capacità di campo drena.</p>
+    <ul>
+      <li>ET0 e piogge: modello Open-Meteo (ET0 FAO Penman-Monteith). Se hai un pluviometro in campo, i suoi dati valgono più di quelli del modello.</li>
+      <li>Pioggia efficace: metodo USDA semplificato (75% fino a 25 mm al giorno, 10% oltre).</li>
+      <li>Capacità idrica del suolo (mm per metro) per classe di tessitura: valori tipici, non misurati sul tuo suolo.</li>
+      <li>Profondità radicale, frazione di esaurimento ammessa e Kc: valori indicativi di riferimento per coltura, da verificare con le tabelle FAO-56 e adattare al tuo caso.</li>
+      <li>La fase colturale scelta vale per tutto il periodo: per colture annuali il modello è meno preciso nelle fasi di crescita rapida.</li>
+      <li>Stato iniziale ignoto: l'incertezza è mostrata a parte. Piogge intense e irrigazioni abbondanti lo cancellano; periodi asciutti lo mantengono.</li>
+      <li>La profondità del suolo è un dato tuo: in collina può variare di molto anche nello stesso appezzamento. Lo scheletro (sassi) non è considerato e riduce l'acqua disponibile.</li>
+      <li>Non considera falda superficiale, risalita capillare, scheletro, pendenza, ruscellamento, pacciamatura o copertura inerbita.</li>
+    </ul>
+  </details>
+</div>
+
+<footer>ric-etp-adv v2 · dati meteo: Weather data by Open-Meteo.com (CC BY 4.0) · ricerca luoghi: Open-Meteo Geocoding</footer>
+
+<script>
+// ------------------------------------------
+// DATI DI RIFERIMENTO
+// ini/mid/end = Kc per fase; zr = profondità radicale indicativa (cm);
+// p = frazione di esaurimento ammessa senza stress (FAO-56, valori indicativi)
+// ------------------------------------------
+const COLTURE = {
+  "Pomodoro":                 { ini: 0.60, mid: 1.15, end: 0.80, zr: 100, p: 0.40 },
+  "Peperone":                 { ini: 0.60, mid: 1.05, end: 0.90, zr: 70,  p: 0.30 },
+  "Melanzana":                { ini: 0.60, mid: 1.05, end: 0.90, zr: 90,  p: 0.45 },
+  "Zucchina":                 { ini: 0.50, mid: 0.95, end: 0.75, zr: 90,  p: 0.50 },
+  "Cetriolo":                 { ini: 0.60, mid: 1.00, end: 0.75, zr: 90,  p: 0.50 },
+  "Lattuga":                  { ini: 0.70, mid: 1.00, end: 0.95, zr: 40,  p: 0.30 },
+  "Fragola":                  { ini: 0.40, mid: 0.85, end: 0.75, zr: 30,  p: 0.20 },
+  "Patata":                   { ini: 0.50, mid: 1.15, end: 0.75, zr: 60,  p: 0.35 },
+  "Basilico":                 { ini: 0.50, mid: 1.00, end: 0.90, zr: 40,  p: 0.40 },
+  "Vite da vino":             { ini: 0.30, mid: 0.70, end: 0.45, zr: 150, p: 0.45 },
+  "Vite da tavola":           { ini: 0.30, mid: 0.85, end: 0.45, zr: 150, p: 0.35 },
+  "Olivo":                    { ini: 0.50, mid: 0.65, end: 0.60, zr: 150, p: 0.65 },
+  "Agrumi (con inerbimento)": { ini: 0.70, mid: 0.70, end: 0.70, zr: 120, p: 0.50 },
+  "Pesco":                    { ini: 0.55, mid: 0.90, end: 0.65, zr: 100, p: 0.50 },
+  "Melo / Pero":              { ini: 0.60, mid: 0.95, end: 0.75, zr: 100, p: 0.50 },
+  "Actinidia (kiwi)":         { ini: 0.40, mid: 1.05, end: 1.05, zr: 100, p: 0.35 },
+  "Mandorlo":                 { ini: 0.40, mid: 0.90, end: 0.65, zr: 120, p: 0.40 },
+  "Mais dolce":               { ini: 0.30, mid: 1.15, end: 1.05, zr: 80,  p: 0.50 },
+  "Girasole":                 { ini: 0.35, mid: 1.00, end: 0.35, zr: 120, p: 0.45 }
+};
+
+// Acqua utile (mm per metro di suolo) per classe di tessitura — valori tipici
+const AWC_MM_M = { "sabbioso": 70, "medio impasto": 140, "limoso": 160, "argilloso": 190 };
+
+const LOCALITA = {
+  "lavagna": [44.31, 9.34], "vernazza": [44.136, 9.683], "albenga": [44.049, 8.218],
+  "neive": [44.723, 8.113], "montalto pavese": [44.969, 9.248], "valdobbiadene": [45.899, 11.999],
+  "rivergaro": [44.913, 9.612], "pitigliano": [42.633, 11.676], "montalcino": [43.056, 11.489],
+  "asti": [44.9, 8.2], "frascati": [41.808, 12.679], "benevento": [41.130, 14.780],
+  "manduria": [40.402, 17.633], "ciro": [39.370, 17.125], "marsala": [37.799, 12.437],
+  "alghero": [40.557, 8.319]
+};
+
+// ------------------------------------------
+// FUNZIONI DI CALCOLO (pure)
+// ------------------------------------------
+function pioggiaEfficace(p) {
+  if (p <= 0) return 0;
+  if (p <= 25) return 0.75 * p;
+  return 0.75 * 25 + 0.10 * (p - 25);
+}
+
+// giorni: [{date, p, et0}], par: {taw, raw, kc, dr0, irr:{data:mm}}
+function simula(giorni, par) {
+  let dr = par.dr0;
+  const out = [];
+  for (const g of giorni) {
+    const ks = dr > par.raw ? Math.max(0, (par.taw - dr) / (par.taw - par.raw)) : 1;
+    const etc = ks * par.kc * g.et0;
+    const pe = pioggiaEfficace(g.p);
+    const irr = par.irr[g.date] || 0;
+    let nuovo = dr - pe - irr + etc;
+    let dp = 0;
+    if (nuovo < 0) { dp = -nuovo; nuovo = 0; }
+    if (nuovo > par.taw) nuovo = par.taw;
+    out.push({ date: g.date, p: g.p, pe, irr, et0: g.et0, ks, etc, dr: nuovo, dp });
+    dr = nuovo;
+  }
+  return out;
+}
+
+function media(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN; }
+function somma(a) { return a.reduce((s, x) => s + x, 0); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtData(d) { return d.slice(8, 10) + '/' + d.slice(5, 7); }
+function f1(x) { return Number.isFinite(x) ? x.toFixed(1) : '–'; }
+
+function leggiIrrigazioni(testo) {
+  const mappa = {};
+  let ignorate = 0;
+  testo.split(/\r?\n/).forEach(riga => {
+    const r = riga.trim();
+    if (!r) return;
+    const m = r.match(/^(\d{4}-\d{2}-\d{2})[\s,;]+(\d+(?:[.,]\d+)?)/);
+    if (!m) { ignorate++; return; }
+    const mm = parseFloat(m[2].replace(',', '.'));
+    mappa[m[1]] = (mappa[m[1]] || 0) + mm;
+  });
+  return { mappa, ignorate };
+}
+
+// ------------------------------------------
+// DATI: località e meteo
+// ------------------------------------------
+(function popolaListe() {
+  const dl = document.getElementById('localita-list');
+  Object.keys(LOCALITA).forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  const sel = document.getElementById('coltura');
+  Object.keys(COLTURE).forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  sel.value = "Olivo";
+  aggiornaRadici();
+  sel.addEventListener('change', aggiornaRadici);
+})();
+
+function aggiornaRadici() {
+  const c = COLTURE[document.getElementById('coltura').value];
+  document.getElementById('radici').value = c.zr;
+  document.getElementById('radici-hint').textContent =
+    `Valore di partenza per la coltura: ${c.zr} cm. Impostalo tu: conta il suolo realmente disponibile (pochi cm in collina, oltre 1 m nelle pianure alluvionali), non la profondità massima della radice. Frazione di esaurimento ammessa: ${Math.round(c.p * 100)}%.`;
+}
+
+async function geocoding(nome) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=1&language=it`;
+  const r = await fetch(url).then(res => res.json());
+  if (!r.results || r.results.length === 0) return null;
+  const x = r.results[0];
+  return { lat: x.latitude, lon: x.longitude, nome: `${x.name} (${x.country || ''})` };
+}
+
+async function ottieniCoordinate(loc) {
+  const k = loc.trim().toLowerCase();
+  if (LOCALITA[k]) return { lat: LOCALITA[k][0], lon: LOCALITA[k][1], nome: k };
+  return await geocoding(k);
+}
+
+async function scaricaMeteo(lat, lon, giorniPassati) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&daily=precipitation_sum,et0_fao_evapotranspiration,temperature_2m_max,temperature_2m_min,` +
+    `relative_humidity_2m_max,relative_humidity_2m_min,wind_speed_10m_max` +
+    `&past_days=${giorniPassati}&forecast_days=7&timezone=Europe%2FRome`;
+  const r = await fetch(url).then(res => res.json());
+  if (r.error) throw new Error(r.reason || 'errore del servizio meteo');
+  if (!r.daily || !r.daily.time) throw new Error('risposta senza dati giornalieri');
+  return r.daily;
+}
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = isErr ? 'err' : '';
+}
+
+// ------------------------------------------
+// CALCOLO PRINCIPALE
+// ------------------------------------------
+async function calcola() {
+  const btn = document.getElementById('btn-calcola');
+  document.getElementById('report').style.display = 'none';
+
+  const loc = document.getElementById('localita').value;
+  const nomeColtura = document.getElementById('coltura').value;
+  const fase = document.getElementById('fase').value;
+  const suolo = document.getElementById('suolo').value;
+  const radiciCm = parseFloat(document.getElementById('radici').value);
+  const kcCustom = parseFloat(document.getElementById('kc_custom').value);
+  const eff = parseFloat(document.getElementById('impianto').value);
+  const passati = parseInt(document.getElementById('periodo').value, 10);
+  const statoIniz = parseFloat(document.getElementById('stato_iniz').value);
+  const ossTxt = document.getElementById('oss').value.trim();
+  const oss = ossTxt === '' ? null : parseFloat(ossTxt);
+
+  if (!loc.trim()) { setStatus('Inserisci una località.', true); return; }
+  if (!(radiciCm >= 10)) { setStatus('Profondità radicale non valida (minimo 10 cm).', true); return; }
+  if (oss !== null && !(oss >= 0 && oss <= 100)) { setStatus('La riserva esaurita osservata deve essere tra 0 e 100.', true); return; }
+  if (document.getElementById('kc_custom').value.trim() !== '' && !(kcCustom >= 0.1 && kcCustom <= 1.5)) {
+    setStatus('Kc personalizzato non valido (tra 0,1 e 1,5).', true); return;
+  }
+
+  const col = COLTURE[nomeColtura];
+  const kc = Number.isFinite(kcCustom) ? kcCustom : col[fase];
+  const taw = AWC_MM_M[suolo] * (radiciCm / 100);
+  const raw = col.p * taw;
+  const irrInfo = leggiIrrigazioni(document.getElementById('irrigazioni').value);
+
+  btn.disabled = true;
+  setStatus('Ricerca della località...');
+  try {
+    const coords = await ottieniCoordinate(loc);
+    if (!coords) { setStatus('❌ Località non trovata.', true); return; }
+
+    setStatus(`Scarico i dati meteo per ${coords.nome}...`);
+    const d = await scaricaMeteo(coords.lat, coords.lon, passati);
+
+    const oggi = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+    const iOggi = d.time.indexOf(oggi);
+    if (iOggi < 1) { setStatus('❌ La data di oggi non è nella risposta del servizio meteo. Riprova più tardi.', true); return; }
+
+    // Riempimento dei dati mancanti (segnalato)
+    const et0Validi = d.et0_fao_evapotranspiration.filter(v => v !== null && v !== undefined);
+    const et0Medio = media(et0Validi);
+    let mancEt0 = 0, mancP = 0;
+    const giorni = d.time.map((t, i) => {
+      let et0 = d.et0_fao_evapotranspiration[i];
+      let p = d.precipitation_sum[i];
+      if (et0 === null || et0 === undefined) { et0 = et0Medio; mancEt0++; }
+      if (p === null || p === undefined) { p = 0; mancP++; }
+      return { date: t, p, et0 };
+    });
+    if (!Number.isFinite(et0Medio)) { setStatus('❌ Il servizio meteo non ha restituito valori di ET0.', true); return; }
+
+    const passato = giorni.slice(0, iOggi);
+    const previsione = giorni.slice(iOggi);
+
+    const parBase = { taw, raw, kc, irr: irrInfo.mappa };
+    const simPassato = simula(passato, { ...parBase, dr0: statoIniz * taw });
+    const drMattinaModello = simPassato[simPassato.length - 1].dr;
+
+    // Incertezza sullo stato iniziale: due estremi (0% e 80% esaurito)
+    const drA = simula(passato, { ...parBase, dr0: 0 }).slice(-1)[0].dr;
+    const drB = simula(passato, { ...parBase, dr0: 0.8 * taw }).slice(-1)[0].dr;
+
+    const drMattina = oss !== null ? (oss / 100) * taw : drMattinaModello;
+    const simPrev = simula(previsione, { ...parBase, dr0: drMattina });
+
+    // ---------- Stato ----------
+    const rapporto = drMattina / raw;
+    let classe, titolo, testoStato;
+    const nettoMm = drMattina;
+    const lordoMm = nettoMm / eff;
+    if (rapporto >= 1) {
+      classe = 'irrigare';
+      titolo = 'SOGLIA DI STRESS RAGGIUNTA — da verificare subito sul campo';
+      testoStato = `L'esaurimento stimato (${f1(drMattina)} mm) ha raggiunto o superato la quota facilmente utilizzabile (${f1(raw)} mm). ` +
+        `Se l'osservazione in campo lo conferma, per riportare il suolo a capacità di campo servono circa ${f1(nettoMm)} mm netti, ` +
+        `cioè ${f1(lordoMm)} L/m² lordi con il sistema scelto.`;
+    } else if (rapporto >= 0.7) {
+      classe = 'attenzione';
+      titolo = 'ATTENZIONE — ci si avvicina alla soglia';
+      testoStato = `L'esaurimento stimato (${f1(drMattina)} mm) è il ${Math.round(rapporto * 100)}% della soglia di stress (${f1(raw)} mm). ` +
+        `Controlla la coltura e il terreno e programma l'intervento. Per ripristinare la capacità di campo: ${f1(nettoMm)} mm netti, ${f1(lordoMm)} L/m² lordi.`;
+    } else {
+      classe = 'ok';
+      titolo = 'RISERVA IDRICA ADEGUATA';
+      testoStato = `L'esaurimento stimato (${f1(drMattina)} mm) è il ${Math.round(rapporto * 100)}% della soglia di stress (${f1(raw)} mm). ` +
+        `Nessuna irrigazione indicata dal modello per ora: conferma con l'osservazione diretta.`;
+    }
+    // Pioggia prevista a breve: puo' cambiare la decisione (da verificare sempre in campo)
+    if (rapporto >= 0.7) {
+      const p3 = somma(previsione.slice(0, 3).map(g => g.p));
+      if (p3 >= 10) {
+        const dr3 = simPrev[Math.min(2, simPrev.length - 1)].dr;
+        testoStato += ` Attenzione: nei prossimi 3 giorni è prevista pioggia (${f1(p3)} mm) e a fine terzo giorno l'esaurimento stimato scenderebbe a ${f1(dr3)} mm. Valuta se attendere, tenendo conto che la previsione può cambiare e che la coltura va comunque osservata in campo.`;
+      }
+    }
+    const stato = document.getElementById('rep-stato');
+    stato.className = 'stato-box ' + classe;
+    stato.innerHTML = `<div class="titolo">${esc(titolo)}</div>${esc(testoStato)}`;
+
+    document.getElementById('rep-titolo').textContent =
+      `Bilancio idrico — ${nomeColtura} (${{ ini: 'iniziale', mid: 'medio', end: 'finale' }[fase]}) · ${coords.nome} · stato di stamattina (${fmtData(oggi)})`;
+
+    document.getElementById('rep-kv').innerHTML =
+      `<div><span>Acqua utile del suolo (TAW):</span> <b>${f1(taw)} mm</b></div>` +
+      `<div><span>Quota facilmente utilizzabile (RAW):</span> <b>${f1(raw)} mm</b></div>` +
+      `<div><span>Esaurimento stimato oggi:</span> <b>${f1(drMattina)} mm (${Math.round(100 * drMattina / taw)}% della riserva)</b></div>` +
+      `<div><span>Kc applicato:</span> <b>${kc.toFixed(2)}</b></div>` +
+      `<div><span>Suolo:</span> <b>${esc(suolo)}, radici ${radiciCm} cm</b></div>` +
+      `<div><span>Origine del valore di oggi:</span> <b>${oss !== null ? 'osservazione inserita da te' : 'modello'}</b></div>`;
+
+    const gap = Math.abs(drA - drB);
+    let incMsg;
+    if (oss !== null) {
+      incMsg = `Il valore di partenza è quello da te osservato (${oss}%); il modello, da solo, avrebbe stimato ${f1(drMattinaModello)} mm.`;
+    } else if (gap < 3) {
+      incMsg = `Incertezza sullo stato iniziale: trascurabile (partendo da suolo a capacità di campo o molto asciutto si ottiene ${f1(Math.min(drA, drB))}–${f1(Math.max(drA, drB))} mm). Le piogge e le irrigazioni degli ultimi mesi hanno "azzerato la memoria".`;
+    } else {
+      incMsg = `Incertezza sullo stato iniziale: partendo da suolo a capacità di campo si ottengono ${f1(drA)} mm, partendo da molto asciutto ${f1(drB)} mm. La differenza (${f1(gap)} mm) è l'errore possibile: una misura in campo la riduce molto.`;
+    }
+    document.getElementById('rep-incertezza').innerHTML = esc(incMsg);
+
+    // ---------- Grafico ----------
+    const serie = simPassato.concat(simPrev);
+    document.getElementById('rep-grafico').innerHTML = costruisciGrafico(serie, simPassato.length, taw, raw);
+
+    // ---------- Previsione ----------
+    let righe = `<table><tr><th>Giorno</th><th>Pioggia prev. (mm)</th><th>ET0 (mm)</th><th>ETc reale (mm)</th><th>Irrig. (mm)</th><th>Esaurimento a fine giorno (mm)</th><th>% riserva</th></tr>`;
+    let giornoSoglia = null;
+    simPrev.forEach((g, i) => {
+      if (giornoSoglia === null && g.dr >= raw) giornoSoglia = i;
+      righe += `<tr><td>${fmtData(g.date)}${i === 0 ? ' (oggi)' : ''}</td><td>${f1(g.p)}</td><td>${f1(g.et0)}</td><td>${f1(g.etc)}</td><td>${g.irr ? f1(g.irr) : '–'}</td><td>${f1(g.dr)}</td><td>${Math.round(100 * g.dr / taw)}%</td></tr>`;
+    });
+    righe += '</table>';
+    document.getElementById('rep-prev').innerHTML = righe;
+
+    let sogliaMsg;
+    if (drMattina >= raw) {
+      sogliaMsg = 'La soglia di stress è già raggiunta o superata: vedi lo stato in alto.';
+    } else if (giornoSoglia !== null) {
+      sogliaMsg = `Con questa previsione (e senza nuove irrigazioni) la soglia di stress viene raggiunta il <b>${fmtData(simPrev[giornoSoglia].date)}</b>, tra ${giornoSoglia === 0 ? 'meno di un giorno' : giornoSoglia + ' giorni'}.`;
+    } else {
+      sogliaMsg = 'Nei prossimi 7 giorni la soglia di stress non viene raggiunta (per la previsione meteo disponibile).';
+    }
+    document.getElementById('rep-soglia').innerHTML = sogliaMsg;
+
+    // ---------- Piogge ----------
+    const pioggeNGiorni = n => somma(passato.slice(-n).map(g => g.p));
+    const giorniUtili = passato.filter(g => g.p >= 5).length;
+    const prev7 = somma(previsione.map(g => g.p));
+    document.getElementById('rep-piogge').innerHTML =
+      `Ultimi 30 giorni: <b>${f1(pioggeNGiorni(30))} mm</b> · ultimi 60: <b>${f1(pioggeNGiorni(60))} mm</b>` +
+      (passati >= 90 ? ` · ultimi 90: <b>${f1(pioggeNGiorni(90))} mm</b>` : '') +
+      `<br>Giorni con almeno 5 mm nel periodo: <b>${giorniUtili}</b> · pioggia prevista nei prossimi 7 giorni: <b>${f1(prev7)} mm</b>` +
+      `<br>Drenaggio profondo stimato nel periodo (acqua oltre la capacità di campo): <b>${f1(somma(simPassato.map(g => g.dp)))} mm</b>`;
+
+    // ---------- Ultima settimana ----------
+    const idx = d.time.slice(0, iOggi);
+    const sett = i0 => { // indici
+      const arr = [];
+      for (let i = i0; i < iOggi; i++) arr.push(i);
+      return arr;
+    };
+    const iS = sett(Math.max(0, iOggi - 7));
+    const iP = []; for (let i = Math.max(0, iOggi - 28); i < Math.max(0, iOggi - 7); i++) iP.push(i);
+    const val = (campo, ind) => ind.map(i => d[campo][i]).filter(v => v !== null && v !== undefined);
+    const urMed = ind => media(ind.map(i => (d.relative_humidity_2m_max[i] + d.relative_humidity_2m_min[i]) / 2).filter(Number.isFinite));
+    const m7 = {
+      pioggia: somma(val('precipitation_sum', iS)),
+      et0: media(val('et0_fao_evapotranspiration', iS)),
+      tmax: media(val('temperature_2m_max', iS)),
+      ur: urMed(iS),
+      vento: media(val('wind_speed_10m_max', iS))
+    };
+    const mP = {
+      pioggia: iP.length ? somma(val('precipitation_sum', iP)) / iP.length * 7 : NaN,
+      et0: media(val('et0_fao_evapotranspiration', iP)),
+      tmax: media(val('temperature_2m_max', iP)),
+      ur: urMed(iP),
+      vento: media(val('wind_speed_10m_max', iP))
+    };
+    const dl = (a, b, dec) => Number.isFinite(a) && Number.isFinite(b) ? ((a - b >= 0 ? '+' : '') + (a - b).toFixed(dec)) : '–';
+    document.getElementById('rep-settimana').innerHTML =
+      `<table><tr><th>Grandezza</th><th>Ultimi 7 giorni</th><th>3 settimane precedenti (media sett.)</th><th>Differenza</th></tr>` +
+      `<tr><td>Pioggia totale (mm)</td><td>${f1(m7.pioggia)}</td><td>${f1(mP.pioggia)}</td><td>${dl(m7.pioggia, mP.pioggia, 1)}</td></tr>` +
+      `<tr><td>ET0 media (mm/giorno)</td><td>${m7.et0.toFixed(2)}</td><td>${mP.et0.toFixed(2)}</td><td>${dl(m7.et0, mP.et0, 2)}</td></tr>` +
+      `<tr><td>Temperatura massima media (°C)</td><td>${f1(m7.tmax)}</td><td>${f1(mP.tmax)}</td><td>${dl(m7.tmax, mP.tmax, 1)}</td></tr>` +
+      `<tr><td>Umidità relativa media (%)</td><td>${f1(m7.ur)}</td><td>${f1(mP.ur)}</td><td>${dl(m7.ur, mP.ur, 1)}</td></tr>` +
+      `<tr><td>Vento massimo medio (km/h)</td><td>${f1(m7.vento)}</td><td>${f1(mP.vento)}</td><td>${dl(m7.vento, mP.vento, 1)}</td></tr></table>`;
+
+    let comm = [];
+    if (Number.isFinite(m7.et0) && Number.isFinite(mP.et0) && mP.et0 > 0) {
+      const v = (m7.et0 - mP.et0) / mP.et0;
+      if (v > 0.15) comm.push(`la settimana è stata più "assetata" della norma recente (ET0 +${Math.round(v * 100)}%): il suolo si è svuotato più in fretta`);
+      else if (v < -0.15) comm.push(`la settimana è stata meno "assetata" della norma recente (ET0 ${Math.round(v * 100)}%)`);
+    }
+    if (m7.ur < 40) comm.push('aria molto secca: osserva con attenzione foglie e germogli');
+    if (m7.vento > 25) comm.push('vento sostenuto: aumenta il consumo e può seccare lo strato superficiale');
+    document.getElementById('rep-sett-commento').textContent = comm.length ? 'Nota: ' + comm.join('; ') + '.' : 'Nessuna anomalia rilevante rispetto alle settimane precedenti.';
+
+    // ---------- Avvisi ----------
+    const avvisi = [];
+    if (radiciCm < 30) avvisi.push(`Suolo molto sottile (${radiciCm} cm): la riserva totale è di soli ${f1(taw)} mm e si esaurisce in pochi giorni di tempo asciutto. Il margine di errore è minimo: controlla la coltura più spesso. Lo scheletro (sassi) riduce ancora l'acqua disponibile.`);
+    if (mancEt0) avvisi.push(`${mancEt0} giorni senza ET0 dal servizio: sostituiti con la media del periodo.`);
+    if (mancP) avvisi.push(`${mancP} giorni senza dato di pioggia: considerati 0 mm.`);
+    if (irrInfo.ignorate) avvisi.push(`${irrInfo.ignorate} righe delle irrigazioni non riconosciute e ignorate (formato richiesto: AAAA-MM-GG, mm).`);
+    const nIrr = Object.keys(irrInfo.mappa).length;
+    if (nIrr) avvisi.push(`Irrigazioni considerate: ${nIrr} (quelle fuori dal periodo mostrato sono ignorate).`);
+    else avvisi.push('Nessuna irrigazione indicata: il modello suppone che il suolo sia stato alimentato solo dalla pioggia.');
+    document.getElementById('rep-avvisi').innerHTML = avvisi.map(esc).join('<br>');
+
+    document.getElementById('report').style.display = 'block';
+    setStatus('');
+  } catch (e) {
+    setStatus('❌ Errore durante il calcolo: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ------------------------------------------
+// GRAFICO SVG
+// ------------------------------------------
+function costruisciGrafico(serie, nPassato, taw, raw) {
+  const W = 700, H = 240, mL = 44, mR = 10, mT = 12, mB = 26;
+  const n = serie.length;
+  const x = i => mL + (W - mL - mR) * (n === 1 ? 0 : i / (n - 1));
+  const yMax = taw * 1.05;
+  const y = v => mT + (H - mT - mB) * (1 - Math.min(v, yMax) / yMax);
+  const pMax = Math.max(10, ...serie.map(g => g.p));
+  const bw = Math.max(1, (W - mL - mR) / n * 0.7);
+  let s = `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Andamento dell'esaurimento idrico del suolo">`;
+  // pioggia (barre in basso)
+  serie.forEach((g, i) => {
+    if (g.p > 0) {
+      const h = (g.p / pMax) * 45;
+      s += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${(H - mB - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" style="fill:var(--blue)" opacity="0.45"/>`;
+    }
+  });
+  // TAW e RAW
+  s += `<line x1="${mL}" x2="${W - mR}" y1="${y(taw)}" y2="${y(taw)}" style="stroke:var(--err)" stroke-dasharray="4 3"/>`;
+  s += `<text x="${mL + 4}" y="${y(taw) - 3}" style="fill:var(--err)" font-size="10">TAW (riserva totale)</text>`;
+  s += `<line x1="${mL}" x2="${W - mR}" y1="${y(raw)}" y2="${y(raw)}" style="stroke:var(--warn)" stroke-dasharray="4 3"/>`;
+  s += `<text x="${mL + 4}" y="${y(raw) - 3}" style="fill:var(--warn)" font-size="10">RAW (soglia di stress)</text>`;
+  // linea Dr
+  const pts = serie.map((g, i) => `${x(i).toFixed(1)},${y(g.dr).toFixed(1)}`).join(' ');
+  s += `<polyline points="${pts}" fill="none" style="stroke:var(--accent)" stroke-width="2"/>`;
+  // oggi
+  const xo = x(nPassato);
+  s += `<line x1="${xo}" x2="${xo}" y1="${mT}" y2="${H - mB}" style="stroke:var(--muted)" stroke-dasharray="2 3"/>`;
+  s += `<text x="${xo + 4}" y="${mT + 10}" style="fill:var(--muted)" font-size="10">oggi → previsione</text>`;
+  // assi
+  s += `<text x="4" y="${y(0) + 4}" style="fill:var(--muted)" font-size="10">0</text>`;
+  s += `<text x="4" y="${y(taw) + 4}" style="fill:var(--muted)" font-size="10">${Math.round(taw)}</text>`;
+  s += `<text x="${mL}" y="${H - 8}" style="fill:var(--muted)" font-size="10">${fmtData(serie[0].date)}</text>`;
+  s += `<text x="${W - mR - 30}" y="${H - 8}" style="fill:var(--muted)" font-size="10">${fmtData(serie[n - 1].date)}</text>`;
+  s += `</svg>`;
+  s += `<div class="hint">Linea verde: esaurimento del suolo (mm) · barre blu: pioggia giornaliera · tratteggi: RAW (soglia di stress) e TAW (riserva totale)</div>`;
+  return s;
+}
+</script>
+<script data-goatcounter="https://ric-agro.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -138,9 +138,22 @@
     <a class="btn" href="ric-microirrigazione.html">Apri ric-microirrigazione →</a>
   </div>
 
+  <div class="card">
+    <h3>🌧 ric-etp-adv — bilancio idrico del suolo</h3>
+    <p>Stima lo stato idrico del suolo oggi a partire dalle piogge degli ultimi 2-3 mesi, dal tipo di suolo e dalla coltura, e prevede i prossimi 7 giorni.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Esaurimento della riserva utile (mm e %), soglia di stress, giorno in cui la si raggiunge con la previsione meteo, volume per ripristinare la capacità di campo. Confronta l'ultima settimana (pioggia, ET0, temperatura, umidità, vento) con le tre precedenti. Tiene conto delle irrigazioni già fatte e di un'eventuale osservazione in campo.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Bilancio a serbatoio giornaliero secondo FAO-56 (ETc = Ks × Kc × ET0); ET0 Penman-Monteith e piogge da Open-Meteo; pioggia efficace con metodo USDA; 19 colture, 4 classi di suolo. Mostra anche l'incertezza dovuta allo stato iniziale del suolo.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Profondità radicali, frazioni di esaurimento e capacità idrica del suolo sono valori tipici, da adattare al caso. La fase colturale scelta vale per tutto il periodo. Piogge da modello, non da pluviometro; non considera falda, pendenza, ruscellamento o pacciamatura.</dd>
+    </dl>
+    <a class="btn" href="ric-etp-adv.html">Apri ric-etp-adv →</a>
+  </div>
+
   <h2>In preparazione</h2>
   <ul>
-    <li>Bilancio idrico avanzato con suolo, piogge recenti e condizioni dell'ultima settimana</li>
     <li>Maturazione della vite e indici bioclimatici</li>
     <li>Database delle piante</li>
   </ul>
