@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viticoltura e clima — Strumenti agronomici</title>
+<style>
+  :root{
+    --bg:#0d0f10; --panel:#15181a; --border:#2a2f33; --text:#d7dbde;
+    --dim:#8a9198; --accent:#4fd67a; --accent2:#5aa9e6; --warn:#e6b45a;
+    --mono:'SF Mono','Menlo','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); margin:0; padding:24px; line-height:1.6;}
+  .wrap{max-width:900px; margin:0 auto;}
+  h1{font-size:1.4em; color:var(--accent); margin:0 0 6px 0;}
+  h2{font-size:1em; color:var(--accent2); border-bottom:1px solid var(--border); padding-bottom:6px; margin:28px 0 14px 0;}
+  h3{font-size:1.05em; color:var(--accent); margin:0 0 6px 0;}
+  .back{font-size:0.85em; margin-bottom:14px;}
+  .sub{color:var(--dim); font-size:0.88em; margin-bottom:18px;}
+  p{margin:0 0 10px 0; font-size:0.9em;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:16px;}
+  .card dl{margin:10px 0 14px 0; font-size:0.82em;}
+  .card dt{color:var(--accent2); margin-top:8px;}
+  .card dd{margin:2px 0 0 0; color:var(--text);}
+  .card dd.lim{color:var(--dim);}
+  .btn{display:inline-block; padding:8px 14px; border:1px solid var(--accent); border-radius:5px; color:var(--accent); background:#1c2b22; text-decoration:none; font-size:0.9em;}
+  .btn:hover{background:#24382c;}
+  .note{border-left:3px solid var(--warn); padding:6px 12px; color:var(--dim); font-size:0.85em; margin:14px 0;}
+  ul{margin:0 0 10px 0; padding-left:20px; font-size:0.88em;}
+  li{margin-bottom:4px;}
+  a{color:var(--accent2);}
+  footer{color:var(--dim); font-size:0.75em; text-align:center; margin-top:30px; line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="back"><a href="../index.html">← Strumenti agronomici</a></div>
+
+  <h1>🍇 Viticoltura e clima</h1>
+  <div class="sub">Indici bioclimatici per leggere una stagione viticola — calcolatori che girano nel browser</div>
+
+  <p>Per descrivere il clima di una stagione viticola si guardano di solito tre aspetti, e gli strumenti di questa sezione li affrontano uno alla volta: <b>quanto calore</b> c'è stato (indice di Huglin), <b>come maturano le uve</b> (escursione termica e notti fresche, indice di Fregoni) e <b>quanta acqua</b> è rimasta nel suolo (indice di siccità di Riou). Letti insieme raccontano un'annata meglio di ciascuno da solo.</p>
+
+  <div class="note">Gli indici descrivono il clima di una località a partire da dati meteo di rianalisi su griglia: non sostituiscono i rilievi in vigna né il giudizio di un tecnico. Le classi e i vitigni indicati sono orientativi.</div>
+
+  <h2>Il calore della stagione</h2>
+
+  <div class="card">
+    <h3>📊 ric-confronto-annate — indice di Huglin</h3>
+    <p>Confronta due annate nella stessa località: quanto è stata più calda o più fresca una rispetto all'altra.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>L'indice di Huglin (HI) di ciascuna annata, la sua classe climatica con i vitigni tipici, la differenza assoluta e in percentuale.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Somma giornaliera da 15 aprile a 10 settembre, a partire dalla media delle temperature e dalla massima, con coefficiente di latitudine da 1,00 a 1,06. Temperature massime e minime dall'archivio Open-Meteo; ricerca del luogo per nome.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Una stagione in corso è incompleta e il valore è provvisorio (lo strumento lo segnala). Le classi indicano l'adattamento di massima dei vitigni, non una garanzia. Dati su griglia, non da stazione.</dd>
+    </dl>
+    <a class="btn" href="ric-confronto-annate.html">Apri ric-confronto-annate →</a>
+  </div>
+
+  <div class="card">
+    <h3>🌡 ric-gdd — sommatoria termica per qualsiasi coltura</h3>
+    <p>I gradi-giorno della vite (temperatura base 10 °C) e di oltre 40 altre colture, in uno strumento a parte nella pagina generale.</p>
+    <a class="btn" href="../ric-gdd_evolution.html">Apri ric-gdd →</a>
+  </div>
+
+  <h2>L'acqua della stagione</h2>
+
+  <div class="card">
+    <h3>💧 ric-siccita — indice di siccità (DI, Riou)</h3>
+    <p>Bilancio idrico potenziale del suolo da aprile a settembre: dice se la stagione è stata umida o secca per la vite, mese per mese.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>La riserva idrica del suolo a fine di ogni mese, con pioggia, evapotraspirazione, traspirazione della vite ed evaporazione dal suolo; il valore finale (DI, in mm) e la classe: molto secco, moderatamente secco, sub-umido, umido.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Metodo di Riou nella versione di Tonietto e Carbonneau (2004): periodo dal 1° aprile al 30 settembre, riserva iniziale Wo di 200 mm (modificabile), coefficiente della vite 0,1 ad aprile, 0,3 a maggio, 0,5 da giugno a settembre. Pioggia ed ET0 FAO Penman-Monteith da Open-Meteo.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">È un bilancio potenziale: non considera falda, pendenza, ruscellamento, irrigazione, inerbimento né la profondità reale del suolo (per questo Wo è modificabile). Il periodo è l'intero semestre, diverso da quello dell'indice di Huglin; una stagione incompleta dà un valore provvisorio.</dd>
+    </dl>
+    <a class="btn" href="ric-siccita.html">Apri ric-siccita →</a>
+  </div>
+
+  <h2>La valutazione del sito</h2>
+
+  <div class="card">
+    <h3>🔬 ric-terroir — valutazione del terroir</h3>
+    <p>Per una località riassume il clima viticolo del luogo (normale 1991-2020), la tendenza recente e come si colloca un'annata scelta rispetto alla normale.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Indice di Huglin, GDD, Cool Night Index (minime di settembre) e indice di Fregoni, ciascuno come normale, media degli ultimi 10 anni e annata scelta con scostamento e posizione nella serie. Dà la classe climatica con i vitigni coerenti e il potenziale di aromi e colore del luogo. Facoltativo: stato della vite da valori di EVI inseriti a mano.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Serie giornaliera Open-Meteo dal 1991; stagione dal 1° aprile al 30 settembre; classi di Tonietto e Carbonneau; Fregoni sui 30 giorni prima della vendemmia (data facoltativa). Località per nome (Nominatim) o per coordinate: il report mostra il luogo trovato e la quota.</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">Dati di rianalisi su griglia, non di una stazione: per una vigna conviene inserire le coordinate. Il calcolo scarica 35 anni di dati e richiede alcuni secondi. Giudizi orientativi. I GDD usano la media semplice e possono differire di poco da quelli di ric-gdd.</dd>
+    </dl>
+    <a class="btn" href="ric-terroir.html">Apri ric-terroir →</a>
+  </div>
+
+  <h2>Dati e crediti</h2>
+  <ul>
+    <li>Dati meteo: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a>, licenza CC BY 4.0.</li>
+    <li>Ricerca dei luoghi: Open-Meteo Geocoding e Nominatim, © contributori di <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.</li>
+    <li>Indice di siccità: Riou et al. (1994); adattamento di Tonietto e Carbonneau, <i>Agricultural and Forest Meteorology</i> 124 (2004) 81-97.</li>
+    <li>Codice: licenza MIT, software libero offerto senza garanzie; <a href="https://github.com/Riccardo1960L/strumenti-agronomici/blob/main/LICENSE" target="_blank" rel="noopener">testo completo su GitHub</a>.</li>
+    <li>Statistiche delle visite: <a href="https://www.goatcounter.com/" target="_blank" rel="noopener">GoatCounter</a>, in forma anonima e senza cookie.</li>
+  </ul>
+
+  <footer>Strumenti agronomici — sezione viticoltura, novembre 2026</footer>
+</div>
+<script data-goatcounter="https://ric-agro.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

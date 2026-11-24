@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indice di Siccità (DI – Riou)</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --dim: #8b949e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    margin: 0;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 680px; }
+  h1 {
+    font-size: 1.15rem;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.5px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--dim);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.3rem;
+    margin-bottom: 1.3rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin-bottom: 0.3rem;
+    margin-top: 0.9rem;
+  }
+  label:first-child { margin-top: 0; }
+  input {
+    width: 100%;
+    background: #010409;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.55rem 0.7rem;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: 0.8rem; }
+  .row > div { flex: 1; }
+  button {
+    width: 100%;
+    margin-top: 1.3rem;
+    background: var(--accent);
+    color: #0d1117;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  pre#output {
+    white-space: pre;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    min-height: 1.2rem;
+  }
+  .ok { color: var(--green); }
+  .err { color: var(--red); }
+  .warn { color: var(--yellow); }
+  .dim { color: var(--dim); }
+  .hint {
+    color: var(--dim);
+    font-size: 0.75rem;
+    margin-top: 0.6rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>INDICE DI SICCITÀ (DI – RIOU)</h1>
+  <div class="subtitle">ric-siccita · standalone · nessuna installazione richiesta</div>
+
+  <div class="panel">
+    <label for="loc">Località</label>
+    <input id="loc" type="text" placeholder="es. lavagna, montalcino, marsala..." value="lavagna">
+
+    <div class="row">
+      <div>
+        <label for="anno">Anno</label>
+        <input id="anno" type="number" placeholder="es. 2024" value="2024">
+      </div>
+      <div>
+        <label for="wo">Riserva idrica iniziale Wo (mm)</label>
+        <input id="wo" type="number" value="200" min="0" max="400">
+      </div>
+    </div>
+
+    <button id="btn" onclick="run()">Calcola</button>
+    <div class="hint">Periodo: 1 aprile → 30 settembre · Wo standard = 200 mm</div>
+  </div>
+
+  <div class="panel">
+    <pre id="output">In attesa di calcolo...</pre>
+  </div>
+</div>
+
+<script>
+const LOCALITA = {
+  "lavagna": [44.31, 9.34],
+  "vernazza": [44.136, 9.683],
+  "albenga": [44.049, 8.218],
+  "neive": [44.723, 8.113],
+  "montalto pavese": [44.969, 9.248],
+  "valdobbiadene": [45.899, 11.999],
+  "rivergaro": [44.913, 9.612],
+  "pitigliano": [42.633, 11.676],
+  "montalcino": [43.056, 11.489],
+  "frascati": [41.808, 12.679],
+  "benevento": [41.130, 14.780],
+  "manduria": [40.402, 17.633],
+  "ciro": [39.370, 17.125],
+  "marsala": [37.799, 12.437],
+  "alghero": [40.557, 8.319]
+};
+
+// Coefficiente k di assorbimento della radiazione (Tonietto & Carbonneau 2004, emisfero nord)
+const K_MESE = { 4: 0.1, 5: 0.3, 6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5 };
+const NOMI_MESE = { 4: "Apr", 5: "Mag", 6: "Giu", 7: "Lug", 8: "Ago", 9: "Set" };
+
+// L'archivio Open-Meteo ha circa 5 giorni di ritardo: uso 7 giorni di margine
+function limiteApi() {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().split("T")[0];
+}
+
+function normalizza(s) { return s.trim().toLowerCase(); }
+
+async function geocoding(nome) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=1&language=it`;
+  const r = await fetch(url).then(res => res.json());
+  if (!r.results || r.results.length === 0) return null;
+  const res = r.results[0];
+  return { lat: res.latitude, lon: res.longitude, nome: res.name, paese: res.country || "" };
+}
+
+async function ottieniCoordinate(loc) {
+  const locNorm = normalizza(loc);
+  if (LOCALITA[locNorm]) {
+    const [lat, lon] = LOCALITA[locNorm];
+    return { lat, lon, nomeLoc: locNorm };
+  }
+  const geo = await geocoding(locNorm);
+  if (geo === null) return null;
+  return { lat: geo.lat, lon: geo.lon, nomeLoc: `${geo.nome} (${geo.paese})` };
+}
+
+// Precipitazione ed ETo (FAO-56 Penman-Monteith) giornaliere
+async function scaricaDati(startDate, endDate, lat, lon) {
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+    `&start_date=${startDate}&end_date=${endDate}` +
+    `&daily=precipitation_sum,et0_fao_evapotranspiration&timezone=Europe%2FRome`;
+  const r = await fetch(url).then(res => res.json());
+  if (!r.daily) return null;
+  return {
+    time: r.daily.time,
+    prec: r.daily.precipitation_sum,
+    et0: r.daily.et0_fao_evapotranspiration
+  };
+}
+
+// Bilancio idrico potenziale mese per mese: W = Wo + P - Tv - Es, mai oltre Wo
+function calcolaDI(dati, anno, Wo) {
+  const mesi = [];
+  let W = Wo;
+
+  for (let m = 4; m <= 9; m++) {
+    let P = 0, ETP = 0, giorni = 0;
+    for (let i = 0; i < dati.time.length; i++) {
+      if (parseInt(dati.time[i].substring(5, 7), 10) !== m) continue;
+      const p = dati.prec[i], e = dati.et0[i];
+      if (p === null || e === null || p === undefined || e === undefined) continue;
+      P += p; ETP += e; giorni++;
+    }
+    if (giorni === 0) break;                      // mese non ancora disponibile
+
+    const Ngiorni = new Date(anno, m, 0).getDate();
+    const N = giorni < Ngiorni ? giorni : Ngiorni; // mese parziale: N = giorni disponibili
+    const k = K_MESE[m];
+    const Tv = ETP * k;
+    const JPm = Math.min(P / 5, N);               // giorni di evaporazione effettiva
+    const Es = ETP * (1 - k) * JPm / N;
+
+    W = Math.min(Wo, W + P - Tv - Es);
+    mesi.push({ m, P, ETP, k, Tv, Es, W, parziale: giorni < Ngiorni });
+  }
+  return { mesi, DI: W };
+}
+
+function classificaDI(di) {
+  if (di <= -100) return "Molto secco (DI+2)";
+  else if (di <= 50) return "Moderatamente secco (DI+1)";
+  else if (di <= 150) return "Sub-umido (DI-1)";
+  else return "Umido (DI-2)";
+}
+
+function stampa(msg, cls) {
+  const out = document.getElementById("output");
+  const span = document.createElement("span");
+  if (cls) span.className = cls;
+  span.textContent = msg;
+  out.appendChild(span);
+}
+
+const f = (x, w) => x.toFixed(1).padStart(w);
+
+async function run() {
+  const btn = document.getElementById("btn");
+  document.getElementById("output").innerHTML = "";
+
+  const loc = document.getElementById("loc").value;
+  const anno = parseInt(document.getElementById("anno").value, 10);
+  const Wo = parseFloat(document.getElementById("wo").value);
+
+  if (!loc) { stampa("❌ Inserisci una località.\n", "err"); return; }
+  if (!anno) { stampa("❌ Inserisci un anno valido.\n", "err"); return; }
+  if (isNaN(Wo) || Wo < 0) { stampa("❌ Wo non valido (mm).\n", "err"); return; }
+
+  btn.disabled = true;
+  btn.textContent = "Calcolo in corso...";
+
+  try {
+    const coords = await ottieniCoordinate(loc);
+    if (coords === null) { stampa("❌ Località non trovata.\n", "err"); return; }
+    const { lat, lon, nomeLoc } = coords;
+
+    const startDate = `${anno}-04-01`;
+    let endDate = `${anno}-09-30`;
+    const lim = limiteApi();
+    if (endDate > lim) endDate = lim;
+    if (endDate < startDate) {
+      stampa("❌ Stagione non ancora iniziata o dati non ancora disponibili.\n", "err");
+      return;
+    }
+
+    const dati = await scaricaDati(startDate, endDate, lat, lon);
+    if (dati === null) { stampa("❌ Nessun dato disponibile.\n", "err"); return; }
+
+    const { mesi, DI } = calcolaDI(dati, anno, Wo);
+    if (mesi.length === 0) { stampa("❌ Dati insufficienti.\n", "err"); return; }
+
+    const L = "================================================\n";
+    stampa(L);
+    stampa("           INDICE DI SICCITÀ (RIOU)\n", "ok");
+    stampa(L);
+    stampa(`Località: ${nomeLoc}\n`);
+    stampa(`Anno: ${anno}   Periodo: ${startDate} → ${endDate}\n`);
+    stampa(`Wo iniziale: ${Wo} mm\n`);
+    stampa("------------------------------------------------\n");
+    stampa("Mese     P     ETP    k     Tv     Es      W\n", "dim");
+    mesi.forEach(r => {
+      stampa(`${NOMI_MESE[r.m]}${r.parziale ? "*" : " "}  ${f(r.P, 6)} ${f(r.ETP, 6)} ${r.k.toFixed(1).padStart(4)} ` +
+             `${f(r.Tv, 6)} ${f(r.Es, 6)} ${f(r.W, 7)}\n`);
+    });
+    stampa("------------------------------------------------\n");
+    const cls = DI <= -100 ? "err" : (DI <= 50 ? "warn" : "ok");
+    stampa(`DI: ${DI.toFixed(1)} mm\n`, cls);
+    stampa(`Classe: ${classificaDI(DI)}\n`, cls);
+    if (mesi.some(r => r.parziale) || mesi.length < 6) {
+      stampa("* stagione incompleta: DI provvisorio\n", "warn");
+    }
+    stampa(L);
+  } catch (e) {
+    stampa(`❌ Errore durante il calcolo: ${e.message}\n`, "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Calcola";
+  }
+}
+</script>
+</body>
+</html>

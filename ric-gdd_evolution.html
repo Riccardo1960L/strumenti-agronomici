@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RIC-GDD — Sommatoria Termica</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --verde-campo: #2D5016;
+    --verde-chiaro: #4A7C28;
+    --verde-sfondo: #F2F5EE;
+    --terra: #8B6914;
+    --terra-chiara: #F5EDD6;
+    --grigio-scuro: #1C1C1C;
+    --grigio-medio: #5A5A5A;
+    --grigio-bordo: #D4D9CC;
+    --bianco: #FAFBF8;
+    --rosso-errore: #C0392B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--verde-sfondo);
+    color: var(--grigio-scuro);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--verde-campo);
+    color: var(--bianco);
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 3px solid var(--terra);
+  }
+
+  .header-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #9BBF7A;
+    margin-bottom: 0.4rem;
+  }
+
+  header h1 {
+    font-size: 1.9rem;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  header h1 strong {
+    font-weight: 500;
+    color: #C8E6A0;
+  }
+
+  header p {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #9BBF7A;
+    font-weight: 300;
+  }
+
+  main {
+    max-width: 680px;
+    margin: 2rem auto;
+    padding: 0 1.5rem 4rem;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--bianco);
+    border: 1px solid var(--grigio-bordo);
+    border-radius: 4px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--verde-chiaro);
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--grigio-bordo);
+  }
+
+  /* MODALITÀ TABS */
+  .modalita-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--grigio-bordo);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border: none;
+    background: var(--bianco);
+    color: var(--grigio-medio);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border-right: 1px solid var(--grigio-bordo);
+  }
+
+  .tab-btn:last-child { border-right: none; }
+
+  .tab-btn.attivo {
+    background: var(--verde-campo);
+    color: var(--bianco);
+    font-weight: 500;
+  }
+
+  /* FORM */
+  .campo-gruppo {
+    margin-bottom: 1.1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--grigio-medio);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--grigio-bordo);
+    border-radius: 3px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.92rem;
+    background: var(--bianco);
+    color: var(--grigio-scuro);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--verde-chiaro);
+  }
+
+  .campo-riga {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* CATEGORIA COLTURE */
+  optgroup { font-weight: 600; color: var(--verde-campo); }
+
+  /* BOTTONE */
+  .btn-calcola {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--verde-campo);
+    color: var(--bianco);
+    border: none;
+    border-radius: 3px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+
+  .btn-calcola:hover { background: var(--verde-chiaro); }
+  .btn-calcola:disabled { background: var(--grigio-bordo); cursor: not-allowed; }
+
+  /* PANNELLO ANNO (solo per modalità stagione) */
+  #pannello-anno { display: none; }
+
+  /* RISULTATO */
+  #risultato { display: none; }
+
+  .risultato-numero {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 600;
+    color: var(--verde-campo);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .risultato-unita {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    color: var(--grigio-medio);
+    margin-left: 0.4rem;
+  }
+
+  .risultato-meta {
+    margin-top: 1.1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .meta-blocco {
+    background: var(--verde-sfondo);
+    border: 1px solid var(--grigio-bordo);
+    border-radius: 3px;
+    padding: 0.75rem 1rem;
+  }
+
+  .meta-etichetta {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--grigio-medio);
+    margin-bottom: 0.2rem;
+  }
+
+  .meta-valore {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--grigio-scuro);
+  }
+
+  /* INDICATORE FENOLOGICO */
+  .feno-barra {
+    margin-top: 1.25rem;
+    background: var(--verde-sfondo);
+    border: 1px solid var(--grigio-bordo);
+    border-radius: 3px;
+    padding: 1rem;
+  }
+
+  .feno-titolo {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--grigio-medio);
+    margin-bottom: 0.75rem;
+  }
+
+  .barra-contenitore {
+    height: 10px;
+    background: var(--grigio-bordo);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .barra-riempimento {
+    height: 100%;
+    background: linear-gradient(90deg, #9BBF7A, var(--verde-campo));
+    border-radius: 5px;
+    transition: width 0.6s ease;
+  }
+
+  .feno-stato {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--verde-campo);
+  }
+
+  /* LOADING */
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--grigio-medio);
+    font-size: 0.9rem;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--grigio-bordo);
+    border-top-color: var(--verde-campo);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERRORE */
+  .errore {
+    background: #FDF2F2;
+    border: 1px solid #E8C5C5;
+    border-radius: 3px;
+    padding: 0.85rem 1rem;
+    color: var(--rosso-errore);
+    font-size: 0.88rem;
+    display: none;
+  }
+
+  /* NOTE T_BASE */
+  .nota-tbase {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--grigio-medio);
+    margin-top: 0.3rem;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--grigio-medio);
+    border-top: 1px solid var(--grigio-bordo);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Agrometeorologia · FAO</div>
+  <h1>RIC-GDD <strong>Sommatoria Termica</strong></h1>
+  <p>Gradi Giorno di Sviluppo · Open-Meteo Archive · Geocoding globale</p>
+</header>
+
+<main>
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-label">Parametri di calcolo</div>
+
+    <!-- TABS MODALITÀ -->
+    <div class="modalita-tabs">
+      <button class="tab-btn attivo" onclick="setModalita('oggi')">📅 Fino a oggi</button>
+      <button class="tab-btn" onclick="setModalita('stagione')">📆 Stagione completa</button>
+    </div>
+
+    <!-- COLTURA -->
+    <div class="campo-gruppo">
+      <label>Coltura</label>
+      <select id="coltura" onchange="aggiornaTbase()">
+        <optgroup label="🥬 Orticole">
+          <option value="pomodoro|10">Pomodoro</option>
+          <option value="melanzana|12">Melanzana</option>
+          <option value="peperone|12">Peperone</option>
+          <option value="zucchino|10">Zucchino</option>
+          <option value="cetriolo|10">Cetriolo</option>
+          <option value="fagiolino|10">Fagiolino</option>
+          <option value="fagiolo|8">Fagiolo</option>
+          <option value="pisello|5">Pisello</option>
+          <option value="lattuga|4">Lattuga</option>
+          <option value="spinacio|0">Spinacio</option>
+          <option value="cipolla|5">Cipolla</option>
+          <option value="aglio|5">Aglio</option>
+          <option value="carota|9">Carota</option>
+          <option value="sedano|5">Sedano</option>
+          <option value="finocchio|7">Finocchio</option>
+          <option value="cocomero|10">Cocomero / Anguria</option>
+          <option value="melone|10">Melone</option>
+          <option value="cavolo|5">Cavolo / Broccolo</option>
+          <option value="carciofo|8">Carciofo</option>
+          <option value="patata|7">Patata</option>
+        </optgroup>
+        <optgroup label="🌾 Pieno campo">
+          <option value="mais|10">Mais</option>
+          <option value="grano|5">Grano tenero</option>
+          <option value="frumento duro|5">Frumento duro</option>
+          <option value="orzo|4">Orzo</option>
+          <option value="avena|5">Avena</option>
+          <option value="girasole|10">Girasole</option>
+          <option value="soia|10">Soia</option>
+          <option value="sorgo|10">Sorgo</option>
+          <option value="barbabietola|3">Barbabietola da zucchero</option>
+          <option value="colza|0">Colza</option>
+          <option value="tabacco|13">Tabacco</option>
+          <option value="canapa|10">Canapa industriale</option>
+        </optgroup>
+        <optgroup label="🍇 Vite e olivo">
+          <option value="vite|10">Vite</option>
+          <option value="olivo|12">Olivo</option>
+        </optgroup>
+        <optgroup label="🍑 Fruttiferi">
+          <option value="pesco|7">Pesco</option>
+          <option value="albicocco|7">Albicocco</option>
+          <option value="susino|7">Susino / Prugno</option>
+          <option value="ciliegio|5">Ciliegio</option>
+          <option value="melo|4">Melo</option>
+          <option value="pero|4">Pero</option>
+          <option value="fico|12">Fico</option>
+          <option value="kiwi|10">Kiwi</option>
+          <option value="mandorlo|7">Mandorlo</option>
+          <option value="nocciolo|5">Nocciolo</option>
+          <option value="noce|10">Noce</option>
+          <option value="melograno|10">Melograno</option>
+          <option value="agrumi|12">Agrumi (limone, arancio…)</option>
+          <option value="castagno|10">Castagno</option>
+        </optgroup>
+      </select>
+      <div class="nota-tbase" id="nota-tbase">T_base = 10°C (FAO)</div>
+    </div>
+
+    <!-- LOCALITÀ -->
+    <div class="campo-gruppo">
+      <label>Località — qualsiasi città nel mondo</label>
+      <input type="text" id="localita" placeholder="es. Lavagna, Bordeaux, Napa Valley…" value="Lavagna">
+    </div>
+
+    <!-- ANNO (solo modalità stagione) -->
+    <div id="pannello-anno" class="campo-gruppo">
+      <label>Anno</label>
+      <input type="number" id="anno" value="2025" min="1981" max="2026">
+    </div>
+
+    <button class="btn-calcola" id="btn-calcola" onclick="calcola()">Calcola GDD</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <span class="spinner"></span> Scarico dati meteo…
+  </div>
+
+  <!-- ERRORE -->
+  <div class="errore" id="errore"></div>
+
+  <!-- RISULTATO -->
+  <div class="card" id="risultato">
+    <div class="card-label">Risultato</div>
+
+    <div>
+      <span class="risultato-numero" id="gdd-valore">—</span>
+      <span class="risultato-unita">GDD</span>
+    </div>
+
+    <div class="risultato-meta">
+      <div class="meta-blocco">
+        <div class="meta-etichetta">Coltura</div>
+        <div class="meta-valore" id="res-coltura">—</div>
+      </div>
+      <div class="meta-blocco">
+        <div class="meta-etichetta">T base</div>
+        <div class="meta-valore" id="res-tbase">—</div>
+      </div>
+      <div class="meta-blocco">
+        <div class="meta-etichetta">Località</div>
+        <div class="meta-valore" id="res-localita">—</div>
+      </div>
+      <div class="meta-blocco">
+        <div class="meta-etichetta">Periodo</div>
+        <div class="meta-valore" id="res-periodo">—</div>
+      </div>
+    </div>
+
+    <!-- BARRA FENOLOGICA -->
+    <div class="feno-barra" id="feno-barra">
+      <div class="feno-titolo">Avanzamento termico stagionale</div>
+      <div class="barra-contenitore">
+        <div class="barra-riempimento" id="barra-fill" style="width:0%"></div>
+      </div>
+      <div class="feno-stato" id="feno-stato"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>RIC-GDD · Open-Meteo Archive API · FAO T_base · Lavagna (GE)</footer>
+
+<script>
+// ─── Stato ────────────────────────────────────────────────────────────────
+let modalita = 'oggi';
+
+// GDD di riferimento per stimare avanzamento fenologico per coltura
+const GDD_MAX = {
+  pomodoro: 1400, melanzana: 1400, peperone: 1500, zucchino: 900,
+  cetriolo: 800, fagiolino: 700, fagiolo: 1000, pisello: 600,
+  lattuga: 500, spinacio: 400, cipolla: 1200, aglio: 1200,
+  carota: 1000, sedano: 1500, finocchio: 1000, cocomero: 1200,
+  melone: 1200, cavolo: 900, carciofo: 1200, patata: 1200,
+  mais: 1300, grano: 1800, "frumento duro": 1800, orzo: 1500,
+  avena: 1400, girasole: 1500, soia: 1400, sorgo: 1400,
+  barbabietola: 1800, colza: 1600, tabacco: 1600, canapa: 1200,
+  vite: 1800, olivo: 2000, pesco: 1400, albicocco: 1300,
+  susino: 1400, ciliegio: 1200, melo: 1600, pero: 1500,
+  fico: 1600, kiwi: 1400, mandorlo: 1200, nocciolo: 1200,
+  noce: 1400, melograno: 1600, agrumi: 2000, castagno: 1400
+};
+
+// ─── Modalità tabs ────────────────────────────────────────────────────────
+function setModalita(m) {
+  modalita = m;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('attivo', (m === 'oggi' && i === 0) || (m === 'stagione' && i === 1));
+  });
+  document.getElementById('pannello-anno').style.display = m === 'stagione' ? 'block' : 'none';
+  document.getElementById('risultato').style.display = 'none';
+  document.getElementById('errore').style.display = 'none';
+}
+
+// ─── Aggiorna nota T_base ─────────────────────────────────────────────────
+function aggiornaTbase() {
+  const sel = document.getElementById('coltura').value;
+  const tbase = sel.split('|')[1];
+  document.getElementById('nota-tbase').textContent = `T_base = ${tbase}°C (FAO)`;
+}
+
+// ─── Geocoding Open-Meteo ────────────────────────────────────────────────
+async function geocodifica(nome) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=1&language=it&format=json`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (!j.results || j.results.length === 0) return null;
+  const res = j.results[0];
+  return {
+    lat: res.latitude,
+    lon: res.longitude,
+    nome: `${res.name}${res.admin1 ? ', ' + res.admin1 : ''}${res.country_code !== 'IT' ? ' (' + res.country + ')' : ''}`
+  };
+}
+
+// ─── Calcolo GDD ─────────────────────────────────────────────────────────
+async function calcola() {
+  const sel = document.getElementById('coltura').value;
+  const [coltura, tbaseStr] = sel.split('|');
+  const tbase = parseFloat(tbaseStr);
+  const localitaInput = document.getElementById('localita').value.trim();
+
+  if (!localitaInput) { mostraErrore('Inserisci una località.'); return; }
+
+  // Date
+  let startDate, endDate;
+  const oggi = new Date();
+  const oggiStr = oggi.toISOString().split('T')[0];
+  // Ultimo giorno con dati: archivio Open-Meteo con circa 5 giorni di ritardo (uso 7 di margine)
+  const dLim = new Date();
+  dLim.setDate(dLim.getDate() - 7);
+  const limiteApi = dLim.toISOString().split('T')[0];
+
+  if (modalita === 'oggi') {
+    const anno = oggi.getFullYear();
+    startDate = `${anno}-04-15`;
+    endDate = oggiStr < limiteApi ? oggiStr : limiteApi;
+  } else {
+    const anno = document.getElementById('anno').value;
+    startDate = `${anno}-04-15`;
+    endDate = `${anno}-09-10`;
+    if (endDate > limiteApi) endDate = limiteApi;
+  }
+
+  // UI: loading
+  document.getElementById('btn-calcola').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('risultato').style.display = 'none';
+  document.getElementById('errore').style.display = 'none';
+
+  try {
+    // Geocoding
+    const loc = await geocodifica(localitaInput);
+    if (!loc) { mostraErrore(`Località "${localitaInput}" non trovata. Prova con un nome diverso.`); return; }
+
+    // Dati meteo
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${loc.lat}&longitude=${loc.lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FRome`;
+    const r = await fetch(url);
+    const j = await r.json();
+
+    if (!j.daily) { mostraErrore('Nessun dato meteo disponibile per questo periodo.'); return; }
+
+    const tmax = j.daily.temperature_2m_max;
+    const tmin = j.daily.temperature_2m_min;
+
+    let totale = 0;
+    for (let i = 0; i < tmax.length; i++) {
+      if (tmax[i] !== null && tmin[i] !== null) {
+        const mnCorr = Math.max(tmin[i], tbase);
+        const media = (tmax[i] + mnCorr) / 2;
+        const gdd = media - tbase;
+        if (gdd > 0) totale += gdd;
+      }
+    }
+    totale = Math.round(totale * 100) / 100;
+
+    // Mostra risultato
+    document.getElementById('gdd-valore').textContent = totale.toLocaleString('it-IT', {maximumFractionDigits: 1});
+    document.getElementById('res-coltura').textContent = coltura.charAt(0).toUpperCase() + coltura.slice(1);
+    document.getElementById('res-tbase').textContent = `${tbase}°C`;
+    document.getElementById('res-localita').textContent = loc.nome;
+    document.getElementById('res-periodo').textContent = `${startDate} → ${endDate}`;
+
+    // Barra fenologica
+    const gddMax = GDD_MAX[coltura] || 1500;
+    const perc = Math.min(100, Math.round((totale / gddMax) * 100));
+    document.getElementById('barra-fill').style.width = perc + '%';
+
+    let stato;
+    if (perc < 20) stato = '🌱 Germinazione / inizio crescita';
+    else if (perc < 45) stato = '🌿 Sviluppo vegetativo';
+    else if (perc < 70) stato = '🌸 Fioritura / allegagione';
+    else if (perc < 90) stato = '🍅 Maturazione';
+    else stato = '✅ Ciclo completato';
+
+    document.getElementById('feno-stato').textContent = `${perc}% del ciclo termico — ${stato}`;
+    document.getElementById('risultato').style.display = 'block';
+
+  } catch (e) {
+    mostraErrore(`Errore di connessione: ${e.message}`);
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('btn-calcola').disabled = false;
+  }
+}
+
+function mostraErrore(msg) {
+  const el = document.getElementById('errore');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('btn-calcola').disabled = false;
+}
+
+// Init
+aggiornaTbase();
+</script>
+</body>
+</html>

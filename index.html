@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strumenti agronomici — radiazione solare, serre e irrigazione</title>
+<title>Strumenti agronomici — radiazione solare, serre, irrigazione e viticoltura</title>
 <style>
   :root{
     --bg:#0d0f10; --panel:#15181a; --border:#2a2f33; --text:#d7dbde;
@@ -39,7 +39,7 @@
 <div class="wrap">
 
   <h1>🌱 Strumenti agronomici</h1>
-  <div class="sub">Radiazione solare, serre e irrigazione — calcolatori che girano nel browser</div>
+  <div class="sub">Radiazione solare, serre, irrigazione e viticoltura — calcolatori che girano nel browser</div>
 
   <p>Piccoli strumenti nati da script Python per l'analisi agronomica, riscritti come pagine web autonome: si aprono nel browser, senza installare nulla e senza registrazione. I dati che servono (posizione, meteo) vengono richiesti a servizi pubblici al momento del calcolo; nessun dato viene salvato da questo sito.</p>
 
@@ -152,9 +152,31 @@
     <a class="btn" href="ric-etp-adv.html">Apri ric-etp-adv →</a>
   </div>
 
+  <h2>Clima e viticoltura</h2>
+
+  <div class="card">
+    <h3>🌡 ric-gdd — sommatoria termica (gradi-giorno)</h3>
+    <p>Quanto calore ha accumulato una coltura in una località, dal 15 aprile a oggi oppure in un'intera stagione passata.</p>
+    <dl>
+      <dt>Cosa calcola</dt>
+      <dd>Gradi-giorno (GDD) per oltre 40 colture (orticole, pieno campo, vite e olivo, fruttiferi), ciascuna con la propria temperatura base, e una barra che mostra a che punto del ciclo si è rispetto a valori di riferimento per coltura.</dd>
+      <dt>Modelli e dati</dt>
+      <dd>Temperature massime e minime giornaliere dall'archivio Open-Meteo; la minima è limitata alla temperatura base. Due modalità: «fino a oggi» (dal 15 aprile) e «stagione» (15 aprile – 10 settembre di un anno a scelta).</dd>
+      <dt>Limiti</dt>
+      <dd class="lim">I valori di riferimento della barra sono indicativi e cambiano con varietà e ambiente. I dati sono di rianalisi su griglia, non di una stazione; gli ultimi giorni arrivano con circa una settimana di ritardo.</dd>
+    </dl>
+    <a class="btn" href="ric-gdd_evolution.html">Apri ric-gdd →</a>
+  </div>
+
+  <div class="card">
+    <h3>🍇 Viticoltura e clima — indici bioclimatici</h3>
+    <p>Una sezione dedicata ai tre aspetti con cui si descrive il clima di una stagione viticola: il calore (indice di Huglin), la maturazione (indice di Fregoni, notti fresche) e l'acqua (indice di siccità di Riou).</p>
+    <a class="btn" href="viticoltura/index.html">Apri la sezione viticoltura →</a>
+  </div>
+
   <h2>In preparazione</h2>
   <ul>
-    <li>Maturazione della vite e indici bioclimatici</li>
+    <li>Maturazione della vite</li>
     <li>Database delle piante</li>
   </ul>
 

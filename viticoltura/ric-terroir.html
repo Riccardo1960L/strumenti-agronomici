@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ric-Terroir — Valutazione del terroir</title>
+<style>
+  :root {
+    --bg: #0d0f0d;
+    --line: #2a2f2a;
+    --fg: #d7e0d5;
+    --dim: #7c8a78;
+    --accent: #8fb573;
+    --accent2: #c9a24b;
+    --warn: #c96b4b;
+    --font: "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    margin: 0;
+    padding: 24px 16px 60px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 {
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+  }
+  .sub { color: var(--dim); font-size: 0.8rem; margin-bottom: 24px; }
+  fieldset {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 16px;
+    padding: 14px 16px 16px;
+  }
+  legend {
+    color: var(--accent2);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0 6px;
+  }
+  label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--dim);
+    margin: 10px 0 4px;
+  }
+  input[type=text], input[type=number], input[type=date] {
+    width: 100%;
+    background: #0a0c0a;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    border-radius: 3px;
+  }
+  input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .evi-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--dim);
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+  #evi-fields { display: none; margin-top: 8px; }
+  #evi-fields.on { display: block; }
+  button {
+    background: var(--accent);
+    color: #0d0f0d;
+    border: none;
+    font-family: var(--font);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 11px 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+  }
+  button:hover { background: #a3cb84; }
+  button:disabled { background: var(--dim); cursor: wait; }
+  #status {
+    font-size: 0.78rem;
+    color: var(--dim);
+    margin-top: 10px;
+    min-height: 1.1em;
+  }
+  #status.err { color: var(--warn); }
+  #report {
+    display: none;
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .r-head {
+    background: #171b17;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .r-head .loc {
+    font-size: 1rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+  .r-head .clima { color: var(--accent2); font-size: 0.82rem; margin-top: 4px; }
+  .r-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1c201c;
+    font-size: 0.82rem;
+  }
+  .r-row:last-child { border-bottom: none; }
+  .r-row .k { color: var(--dim); }
+  .r-row .v { text-align: right; color: var(--fg); max-width: 60%; }
+  .r-row.block { flex-direction: column; }
+  .r-row.block .v { text-align: left; max-width: 100%; margin-top: 4px; }
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+  }
+  .badge.ok { background: #23361f; color: #9fd97e; }
+  .badge.mid { background: #362f1c; color: #e0c169; }
+  .badge.bad { background: #3a201c; color: #e08a72; }
+  footer {
+    margin-top: 30px;
+    color: var(--dim);
+    font-size: 0.7rem;
+    text-align: center;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .hint { color: var(--dim); font-size: 0.75rem; margin-top: 6px; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 10px 0; }
+  .tbl th, .tbl td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; color: var(--dim); }
+  .tbl th { color: var(--accent2); font-weight: normal; }
+  .tbl small { color: var(--dim); }
+  .avviso { color: var(--dim); font-size: 0.75rem; margin-top: 12px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ric-Terroir</h1>
+  <div class="sub">Valutazione del terroir viticolo — clima del luogo (normale 1991-2020), tendenza e annata · Huglin · GDD · Fregoni · Cool Night Index</div>
+
+  <fieldset>
+    <legend>Località</legend>
+    <label for="loc-name">Nome località (geocoding automatico)</label>
+    <input type="text" id="loc-name" placeholder="es. Asti, Valdobbiadene, Gussago">
+    <div class="row">
+      <div>
+        <label for="lat">Latitudine (opzionale, sovrascrive geocoding)</label>
+        <input type="number" id="lat" step="0.0001" placeholder="es. 46.10">
+      </div>
+      <div>
+        <label for="lon">Longitudine (opzionale)</label>
+        <input type="number" id="lon" step="0.0001" placeholder="es. 11.15">
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Annata da confrontare con la normale</legend>
+    <div class="row">
+      <div>
+        <label for="anno">Annata (1991 → ultima stagione completa)</label>
+        <input type="number" id="anno" min="1991" step="1">
+      </div>
+      <div>
+        <label for="vend">Data di vendemmia (facoltativa, per Fregoni)</label>
+        <input type="date" id="vend">
+      </div>
+    </div>
+    <div class="hint">Stagione sempre dal 1° aprile al 30 settembre. Senza data di vendemmia, Fregoni usa gli ultimi 30 giorni di settembre.</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Dato satellitare EVI (facoltativo)</legend>
+    <label class="evi-toggle">
+      <input type="checkbox" id="evi-check"> Ho un valore EVI da inserire manualmente
+    </label>
+    <div id="evi-fields">
+      <div class="row">
+        <div>
+          <label for="evi-picco">EVI al picco vegetativo</label>
+          <input type="number" id="evi-picco" step="0.01" placeholder="es. 0.70">
+        </div>
+        <div>
+          <label for="evi-attuale">EVI attuale</label>
+          <input type="number" id="evi-attuale" step="0.01" placeholder="es. 0.58">
+        </div>
+      </div>
+    </div>
+  </fieldset>
+
+  <button id="run-btn" onclick="eseguiAnalisi()">Analizza terroir</button>
+  <div id="status"></div>
+
+  <div id="report"></div>
+
+  <footer>Dati meteo storici: Open-Meteo Archive API (rianalisi su griglia, non stazioni) · Geocoding: OpenStreetMap Nominatim<br>Per il bilancio idrico della stagione: <a href="ric-siccita.html" style="color:inherit">indice di siccità (Riou)</a></footer>
+</div>
+
+<script>
+// =====================================================================
+// CALCOLO DEGLI INDICI
+// Normale = media 1991-2020; tendenza = ultimi 10 anni completi;
+// annata = anno scelto, pesato rispetto alla normale.
+// =====================================================================
+
+const ANNO_SERIE = 1991;
+const NORMALE_DA = 1991, NORMALE_A = 2020;
+const GIORNI_MIN = 174;            // 95% dei 183 giorni di aprile-settembre
+
+function limiteDati() {            // archivio Open-Meteo: ~5 giorni di ritardo (7 di margine)
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().split('T')[0];
+}
+
+function ultimoAnnoCompleto() {
+  const lim = limiteDati();
+  let y = parseInt(lim.substring(0, 4), 10);
+  if (`${y}-09-30` > lim) y -= 1;
+  return y;
+}
+
+function addGiorni(s, n) {
+  const d = new Date(s + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+const media = a => a.reduce((s, x) => s + x, 0) / a.length;
+function devStd(a) {
+  const m = media(a);
+  return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / a.length);
+}
+
+function calcolaCoefficienteK(latAbs) {
+  if (latAbs <= 40) return 1.00;
+  if (latAbs <= 42) return 1.02;
+  if (latAbs <= 44) return 1.03;
+  if (latAbs <= 46) return 1.04;
+  if (latAbs <= 48) return 1.05;
+  return 1.06;
+}
+
+// Raggruppa i dati per anno, tenendo da aprile a ottobre (ottobre serve solo a Fregoni)
+function raggruppaPerAnno(daily) {
+  const out = {};
+  for (let i = 0; i < daily.time.length; i++) {
+    const d = daily.time[i];
+    const mmdd = d.substring(5);
+    if (mmdd < '04-01' || mmdd > '10-31') continue;
+    const tmax = daily.temperature_2m_max[i];
+    const tmin = daily.temperature_2m_min[i];
+    const tmean = daily.temperature_2m_mean[i];
+    if (tmax === null || tmin === null || tmean === null) continue;
+    const y = parseInt(d.substring(0, 4), 10);
+    if (!out[y]) out[y] = [];
+    out[y].push({ d, tmax, tmin, tmean });
+  }
+  return out;
+}
+
+// Indici di una stagione. vend = 'MM-GG' (fine della finestra di 30 giorni per Fregoni)
+function indiciAnno(giorni, lat, vend) {
+  const k = calcolaCoefficienteK(Math.abs(lat));
+  const stag = giorni.filter(g => g.d.substring(5) <= '09-30');
+  let hs = 0, gdd = 0;
+  stag.forEach(g => {
+    hs += Math.max(0, ((g.tmean - 10) + (g.tmax - 10)) / 2);
+    gdd += Math.max(0, (g.tmax + g.tmin) / 2 - 10);
+  });
+  const sett = giorni.filter(g => g.d.substring(5, 7) === '09');
+  const cni = sett.length >= 25 ? media(sett.map(g => g.tmin)) : null;
+
+  const anno = giorni[0].d.substring(0, 4);
+  const fine = `${anno}-${vend}`;
+  const ini = addGiorni(fine, -29);
+  const fin = giorni.filter(g => g.d >= ini && g.d <= fine);
+  let freg = null;
+  if (fin.length >= 25) {
+    let somma = 0, freschi = 0;
+    fin.forEach(g => { somma += g.tmax - g.tmin; if (g.tmin < 10) freschi++; });
+    freg = somma * freschi;
+  }
+  return { hi: hs * k, gdd, cni, freg, giorniStagione: stag.length };
+}
+
+function mediaChiave(anni, serie, chiave) {
+  const v = anni.map(y => serie[y] ? serie[y][chiave] : null).filter(x => x !== null && x !== undefined);
+  return v.length ? media(v) : null;
+}
+
+// Classi di Huglin (Tonietto e Carbonneau): sei classi, come in ric-confronto-annate
+function classeHuglin(hi) {
+  if (hi < 1500) return { nome: "Molto freddo (HI-3)", vitigni: "Chardonnay, Pinot Nero, Riesling (viticoltura al limite)" };
+  if (hi < 1800) return { nome: "Freddo (HI-2)", vitigni: "Sauvignon Blanc, Pinot Grigio, Pinot Nero, Chardonnay" };
+  if (hi < 2100) return { nome: "Temperato (HI-1)", vitigni: "Merlot, Sangiovese, Cabernet Franc" };
+  if (hi < 2400) return { nome: "Temperato caldo (HI+1)", vitigni: "Cabernet Sauvignon, Syrah, Nebbiolo" };
+  if (hi < 3000) return { nome: "Caldo (HI+2)", vitigni: "Nero d'Avola, Grenache, Primitivo" };
+  return { nome: "Molto caldo (HI+3)", vitigni: "Varietà molto resistenti a caldo e siccità; uve da tavola e da passito" };
+}
+
+// Classi del Cool Night Index (minime di settembre)
+function classeCNI(c) {
+  if (c <= 12) return "notti molto fresche (CI-2)";
+  if (c <= 14) return "notti fresche (CI-1)";
+  if (c <= 18) return "notti temperate (CI+1)";
+  return "notti calde (CI+2)";
+}
+
+// Potenziale aromi/colore: giudizio sul luogo, quindi sulla normale
+function potenziale(cni, freg) {
+  let liv = cni <= 14 ? 2 : (cni <= 18 ? 1 : 0);
+  if (freg !== null && freg >= 1000 && liv < 2) liv++;
+  if (liv === 2) return { badge: 'ok', testo: "ECCELLENTE. Notti fresche ed escursione termica marcata favoriscono acidità, colore (antociani) e precursori aromatici." };
+  if (liv === 1) return { badge: 'mid', testo: "BUONA. Condizioni equilibrate, con buona tipicità varietale senza eccessiva perdita di freschezza." };
+  return { badge: 'bad', testo: "CRITICA. Notti calde in maturazione: rischio di perdita di acidità e di una maturazione tecnologica (zuccheri) più rapida di quella aromatica e fenolica." };
+}
+
+function etichettaAnnata(z) {
+  if (z <= -1.5) return "eccezionalmente fresca";
+  if (z <= -0.5) return "fresca";
+  if (z < 0.5) return "nella norma";
+  if (z < 1.5) return "calda";
+  return "eccezionalmente calda";
+}
+
+// Sezione EVI (invariata rispetto alla versione precedente)
+function generaEvi(evi, gdd) {
+  if (!evi || !(evi.piccoEvi > 0)) return null;
+  const rapporto = evi.eviAttuale / evi.piccoEvi;
+  let stato;
+  if (rapporto > 0.90) {
+    stato = "Attività vegetativa ancora molto forte. La pianta è lontana dalla senescenza. Raccolta non imminente.";
+  } else if (rapporto >= 0.70) {
+    stato = "Fase di maturazione attiva. L'EVI sta scendendo gradualmente come previsto. La pianta sta canalizzando le risorse verso i grappoli.";
+  } else {
+    stato = "Forte senescenza o stress idrico/fogliatizio severo. Verificare sul campo: se i frutti non sono pronti, la pianta potrebbe aver bloccato la fotosintesi precocemente.";
+  }
+  const fTerm = Math.min(1.0, gdd / 1400);
+  const fVeg = rapporto >= 0.70 ? (1 - (rapporto - 0.70) / 0.30) : 1.0;
+  return {
+    rapporto: (rapporto * 100).toFixed(1),
+    stato,
+    progresso: (Math.min(100, ((fTerm + fVeg) / 2) * 100)).toFixed(1)
+  };
+}
+
+// Analisi completa: serie storica -> normale, tendenza, annata
+function analizza(daily, lat, annoScelto, vend) {
+  const perAnno = raggruppaPerAnno(daily);
+  const ultimo = ultimoAnnoCompleto();
+  const serie = {};
+  Object.keys(perAnno).forEach(ys => {
+    const y = parseInt(ys, 10);
+    const stag = perAnno[y].filter(g => g.d.substring(5) <= '09-30');
+    if (y <= ultimo && stag.length >= GIORNI_MIN) serie[y] = indiciAnno(perAnno[y], lat, vend);
+  });
+
+  const anniNormale = [];
+  for (let y = NORMALE_DA; y <= NORMALE_A; y++) if (serie[y]) anniNormale.push(y);
+  if (anniNormale.length < 25) throw new Error("Serie storica insufficiente per calcolare la normale (servono almeno 25 anni su 30).");
+
+  const anniTrend = [];
+  for (let y = ultimo - 9; y <= ultimo; y++) if (serie[y]) anniTrend.push(y);
+
+  const chiavi = ['hi', 'gdd', 'cni', 'freg'];
+  const normale = {}, trend = {};
+  chiavi.forEach(c => { normale[c] = mediaChiave(anniNormale, serie, c); trend[c] = mediaChiave(anniTrend, serie, c); });
+
+  const hiNormale = anniNormale.map(y => serie[y].hi);
+  const sd = devStd(hiNormale);
+
+  // Annata scelta
+  let annata = serie[annoScelto] || null, parziale = false;
+  if (!annata) {
+    if (!perAnno[annoScelto] || perAnno[annoScelto].length < 20) throw new Error(`Dati non disponibili per il ${annoScelto}.`);
+    annata = indiciAnno(perAnno[annoScelto], lat, vend);
+    parziale = true;
+  }
+  const z = sd > 0 ? (annata.hi - normale.hi) / sd : 0;
+
+  let posizione = null;
+  if (!parziale) {
+    const tutti = Object.keys(serie).map(y => serie[y].hi);
+    posizione = { n: tutti.filter(h => h > annata.hi).length + 1, su: tutti.length };
+  }
+
+  return { normale, trend, annata, parziale, z, posizione, anniTrend, anniNormale, serieAnni: Object.keys(serie).length };
+}
+
+// =====================================================================
+// DATI REALI — Nominatim (geocoding) + Open-Meteo (archivio meteo)
+// =====================================================================
+
+async function geocodifica(nome) {
+  async function cerca(extra) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(nome)}${extra}`;
+    const res = await fetch(url, { headers: { "Accept-Language": "it" } });
+    if (!res.ok) throw new Error("Geocoding non riuscito");
+    return res.json();
+  }
+  // prima cerco tra gli abitati (città, paesi), poi senza restrizioni (valli, zone)
+  let data = await cerca('&featuretype=settlement');
+  if (!data.length) data = await cerca('');
+  if (!data.length) throw new Error("Località non trovata");
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+async function recuperaSerie(lat, lon, fine) {
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+    `&start_date=${ANNO_SERIE}-01-01&end_date=${fine}` +
+    `&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Recupero dati meteo non riuscito");
+  const data = await res.json();
+  if (!data.daily || !data.daily.time) throw new Error("Dati meteo non disponibili per questa località");
+  return { daily: data.daily, quota: data.elevation };
+}
+
+// =====================================================================
+// INTERFACCIA
+// =====================================================================
+
+document.getElementById('evi-check').addEventListener('change', function () {
+  document.getElementById('evi-fields').classList.toggle('on', this.checked);
+});
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status');
+  el.textContent = msg || '';
+  el.classList.toggle('err', !!isErr);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const n0 = x => (x === null || x === undefined) ? 'n.d.' : x.toFixed(0);
+const n1 = x => (x === null || x === undefined) ? 'n.d.' : x.toFixed(1);
+const sgn = x => (x >= 0 ? '+' : '') + x;
+
+// cella con valore e scostamento dalla normale
+function cella(v, rif, dec, conPerc) {
+  if (v === null || v === undefined) return 'n.d.';
+  const val = v.toFixed(dec);
+  if (rif === null || rif === undefined) return val;
+  const diff = v - rif;
+  let sc = sgn(diff.toFixed(dec));
+  if (conPerc && rif !== 0) sc += ` (${sgn((diff / rif * 100).toFixed(0))}%)`;
+  return `${val}<br><small>${sc}</small>`;
+}
+
+function renderReport(ctx, r, evi) {
+  const cl = classeHuglin(r.normale.hi);
+  const clTrend = classeHuglin(r.trend.hi);
+  const pot = potenziale(r.normale.cni, r.normale.freg);
+  const a = r.annata;
+  const rangeTrend = `${r.anniTrend[0]}–${r.anniTrend[r.anniTrend.length - 1]}`;
+
+  let frasePosizione = '';
+  if (r.posizione) frasePosizione = ` È la ${r.posizione.n}ª annata più calda su ${r.posizione.su} (dal ${ANNO_SERIE}).`;
+  if (r.parziale) frasePosizione = ' Stagione incompleta: valori provvisori.';
+  const diffPerc = ((a.hi - r.normale.hi) / r.normale.hi * 100).toFixed(0);
+
+  let fraseTrend = `Negli ultimi ${r.anniTrend.length} anni (${rangeTrend}) l'Huglin medio è ${n0(r.trend.hi)} (${sgn((r.trend.hi - r.normale.hi).toFixed(0))} sulla normale)`;
+  fraseTrend += clTrend.nome !== cl.nome ? `: oggi il luogo ricadrebbe nella classe «${clTrend.nome}».` : `: la classe resta quella della normale.`;
+
+  let html = `
+    <div class="r-head">
+      <div class="loc">${esc(ctx.nome)}</div>
+      <div class="clima">Clima del luogo (normale ${NORMALE_DA}-${NORMALE_A}): ${cl.nome}</div>
+    </div>
+    <div class="r-row block"><div class="k">Posizione usata per i dati</div>
+      <div class="v">${esc(ctx.trovato)}<br>lat ${ctx.lat.toFixed(4)}, lon ${ctx.lon.toFixed(4)}${ctx.quota !== undefined ? ', quota del punto di griglia ' + Math.round(ctx.quota) + ' m' : ''}${ctx.daGeocoding ? '<br><small>Controlla che sia il luogo giusto: per una vigna inserisci le coordinate.</small>' : ''}</div></div>
+    <div class="r-row"><div class="k">Vitigni coerenti con la classe</div><div class="v">${cl.vitigni}</div></div>
+
+    <table class="tbl">
+      <tr><th></th><th>Normale<br>${NORMALE_DA}-${NORMALE_A}</th><th>Ultimi ${r.anniTrend.length} anni<br>${rangeTrend}</th><th>Annata<br>${ctx.anno}${r.parziale ? '*' : ''}</th></tr>
+      <tr><td>Indice di Huglin</td><td>${n0(r.normale.hi)}</td><td>${cella(r.trend.hi, r.normale.hi, 0, true)}</td><td>${cella(a.hi, r.normale.hi, 0, true)}</td></tr>
+      <tr><td>GDD (base 10)</td><td>${n0(r.normale.gdd)}</td><td>${cella(r.trend.gdd, r.normale.gdd, 0, true)}</td><td>${cella(a.gdd, r.normale.gdd, 0, true)}</td></tr>
+      <tr><td>Cool Night Index (°C)</td><td>${n1(r.normale.cni)}</td><td>${cella(r.trend.cni, r.normale.cni, 1, false)}</td><td>${cella(a.cni, r.normale.cni, 1, false)}</td></tr>
+      <tr><td>Indice di Fregoni</td><td>${n0(r.normale.freg)}</td><td>${cella(r.trend.freg, r.normale.freg, 0, false)}</td><td>${cella(a.freg, r.normale.freg, 0, false)}</td></tr>
+    </table>
+
+    <div class="r-row block"><div class="k">Le notti del luogo, in maturazione</div>
+      <div class="v">Media delle minime di settembre ${n1(r.normale.cni)} °C: ${classeCNI(r.normale.cni)}.</div></div>
+    <div class="r-row block"><div class="k">Potenziale aromi/colore (del luogo) <span class="badge ${pot.badge}">${pot.badge === 'ok' ? 'ECCELLENTE' : pot.badge === 'mid' ? 'BUONA' : 'CRITICA'}</span></div>
+      <div class="v">${pot.testo}</div></div>
+    <div class="r-row block"><div class="k">Tendenza</div><div class="v">${fraseTrend}</div></div>
+    <div class="r-row block"><div class="k">Annata ${ctx.anno}: ${etichettaAnnata(r.z)}</div>
+      <div class="v">Huglin ${n0(a.hi)}, ${sgn(diffPerc)}% sulla normale (${sgn(r.z.toFixed(1))} deviazioni standard).${frasePosizione}</div></div>
+  `;
+
+  if (evi) {
+    html += `
+      <div class="r-row"><div class="k">EVI attuale/picco</div><div class="v">${evi.rapporto}%</div></div>
+      <div class="r-row block"><div class="k">Stato fisiologico della vite</div><div class="v">${evi.stato}</div></div>
+      <div class="r-row"><div class="k">Stima progresso maturazione</div><div class="v">${evi.progresso}%</div></div>
+    `;
+  }
+  html += `<div class="avviso">Classi e giudizi sono orientativi. La normale descrive il luogo; l'annata è mostrata come scostamento da essa, così un'annata estrema (per esempio 2003 o 2017) non cambia la vocazione del sito. Dati su griglia, non da stazione.${r.parziale ? '<br>* stagione in corso o incompleta.' : ''}</div>`;
+
+  const box = document.getElementById('report');
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+
+async function eseguiAnalisi() {
+  const btn = document.getElementById('run-btn');
+  document.getElementById('report').style.display = 'none';
+  setStatus('');
+
+  const nomeInput = document.getElementById('loc-name').value.trim();
+  let lat = parseFloat(document.getElementById('lat').value);
+  let lon = parseFloat(document.getElementById('lon').value);
+  const anno = parseInt(document.getElementById('anno').value, 10);
+  const vendIn = document.getElementById('vend').value;
+  let vend = vendIn ? vendIn.substring(5) : '09-30';
+  if (vend > '10-31') vend = '10-31';
+  if (vend < '09-01') vend = '09-30';
+
+  if (!anno || anno < ANNO_SERIE || anno > new Date().getFullYear()) {
+    setStatus(`Inserisci un'annata tra ${ANNO_SERIE} e quella in corso.`, true);
+    return;
+  }
+  if (!nomeInput && (isNaN(lat) || isNaN(lon))) {
+    setStatus('Inserisci un nome località o coordinate lat/lon.', true);
+    return;
+  }
+  const evi = document.getElementById('evi-check').checked ? {
+    piccoEvi: parseFloat(document.getElementById('evi-picco').value),
+    eviAttuale: parseFloat(document.getElementById('evi-attuale').value)
+  } : null;
+
+  btn.disabled = true;
+  const ctx = { anno, nome: nomeInput || `Lat ${lat}, Lon ${lon}`, trovato: 'coordinate inserite', daGeocoding: false };
+
+  try {
+    if (isNaN(lat) || isNaN(lon)) {
+      setStatus('Ricerca della località…');
+      const geo = await geocodifica(nomeInput);
+      lat = geo.lat; lon = geo.lon;
+      ctx.trovato = geo.display;
+      ctx.daGeocoding = true;
+    }
+    ctx.lat = lat; ctx.lon = lon;
+
+    setStatus(`Scarico la serie storica ${ANNO_SERIE}-oggi (può richiedere alcuni secondi)…`);
+    const { daily, quota } = await recuperaSerie(lat, lon, limiteDati());
+    ctx.quota = quota;
+
+    setStatus('Calcolo normale, tendenza e annata…');
+    const r = analizza(daily, lat, anno, vend);
+    renderReport(ctx, r, generaEvi(evi, r.annata.gdd));
+    setStatus(`Analisi completata — normale su ${r.anniNormale.length} anni, serie di ${r.serieAnni} stagioni.`);
+  } catch (err) {
+    setStatus('Errore: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Annata predefinita: ultima stagione completa
+document.getElementById('anno').value = ultimoAnnoCompleto();
+document.getElementById('anno').max = new Date().getFullYear();
+</script>
+</body>
+</html>
